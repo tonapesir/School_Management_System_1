@@ -35,7 +35,7 @@ body.role-cert #userMgmtAdminCards,
 body.role-master #userMgmtAdminCards{display:none!important}
 /* सर्व Users ला आता Google Sheets URL + Load Students सुविधा उपलब्ध (V19.15) */
 
-/* ===== CLASS TEACHER ROLE (V19.23) — फक्त स्वतःच्या वर्गाचे Teacher पान दिसते ===== */
+/* ===== CLASS TEACHER ROLE (V19.25) — फक्त स्वतःच्या वर्गाचे Teacher पान दिसते ===== */
 body.role-teacher .navbtn:not([data-page="teacher"]),
 body.role-teacher .dcard:not([data-page="teacher"]){display:none!important}
 body.role-teacher .master-only,
