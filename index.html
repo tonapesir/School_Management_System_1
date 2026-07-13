@@ -51,7 +51,7 @@ body.role-cert #userMgmtAdminCards,
 body.role-master #userMgmtAdminCards{display:none!important}
 /* सर्व Users ला आता Google Sheets URL + Load Students सुविधा उपलब्ध (V19.15) */
 
-/* ===== CLASS TEACHER ROLE (V19.25) — फक्त स्वतःच्या वर्गाचे Teacher पान दिसते ===== */
+/* ===== CLASS TEACHER ROLE (V19.27) — फक्त स्वतःच्या वर्गाचे Teacher पान दिसते ===== */
 body.role-teacher .navbtn:not([data-page="teacher"]),
 body.role-teacher .dcard:not([data-page="teacher"]){display:none!important}
 body.role-teacher .master-only,
@@ -340,6 +340,8 @@ body:not(.auth-locked) .login-screen{display:none}
       <p>School Management System Login</p>
     </div>
     <form class="login-body" onsubmit="attemptLogin(event)">
+      <button type="button" class="btn btn-blue" id="preConnectBtn" onclick="preConnectLogin()" style="width:100%;padding:9px 14px;margin-bottom:6px">🔄 प्रथम शाळेशी जोडा (जलद व सुरक्षित Login साठी)</button>
+      <div id="preConnectStatus" style="font-size:11.5px;text-align:center;margin:0 0 14px;min-height:14px"></div>
       <div class="login-field">
         <label>Username</label>
         <input id="loginUsername" autocomplete="username" placeholder="user_1 / user_2 / user_3" required>
@@ -1244,7 +1246,7 @@ body:not(.auth-locked) .login-screen{display:none}
   </div>
 </div>
 
-<!-- ==================== CLASS TEACHER PAGE (V19.25) ==================== -->
+<!-- ==================== CLASS TEACHER PAGE (V19.27) ==================== -->
 <!-- ==================== STATISTICS REPORT PAGE (V19.19 — Super Master/Master) ==================== -->
 <div id="pg-stats" class="page">
   <div class="sec-title" style="margin-bottom:4px">📊 सांख्यिकी अहवाल (Statistics Report)</div>
