@@ -310,15 +310,8 @@ body:not(.auth-locked) .login-screen{display:none}
   html,body{width:210mm;height:297mm}
   #certModal .modal-box{width:210mm!important}
 }
-</style>
-</head>
-<body class="auth-locked">
 
-
-' +
-      '@page{size:A4;margin:0} body{margin:0;background:#fff;} ' + css +
-      '
-
+/* ===== next style block ===== */
 
 #sgsNotifBg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998}
 #sgsNotif{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);

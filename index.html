@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>श्री.गोविंदराम सेक्सरिया हायस्कूल, पाचोरा</title>
 <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;700&family=Noto+Serif+Devanagari:wght@400;600;700;900&family=Noto+Sans+Devanagari:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.8/dist/pizzip.min.js"></script>
@@ -14,320 +15,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<style>
-:root {
-  --navy:#1a2a4a; --navy2:#223262; --navy3:#2c3e6b;
-  --gold:#d4902a; --gold2:#e8b05a;
-  --peach:#fdf0e6; --pb:#d4a87a;
-  --txt:#f0e8d8; --orange:#c0521a; --orhov:#e06020;
-  --green:#1a7a3a; --red:#7a1a1a; --blue:#1a4a7a;
-  --r:6px; --sh:0 4px 20px rgba(0,0,0,.3);
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Poppins','Noto Sans Devanagari',sans-serif;background:linear-gradient(135deg,#0d1b35,#1a2a4a,#0d1b35);min-height:100vh;color:var(--txt)}
-body.auth-locked{overflow:hidden}
-body.auth-locked .topnav,
-body.auth-locked .cfgbar,
-body.auth-locked .page,
-body.auth-locked details,
-body.auth-locked #certModal{display:none!important}
-body.role-deo .master-only,
-body.role-cert .master-only,
-body.role-cert .edit-only,
-body.role-cert .user-hidden{display:none!important}
-body.role-deo .navbtn:not([data-page="student"]):not([data-page="search"]):not([data-page="history"]):not([data-page="users"]):not([data-page="profile"]),
-body.role-deo .dcard:not([data-page="student"]):not([data-page="search"]):not([data-page="history"]):not([data-page="users"]):not([data-page="profile"]){display:none!important}
-/* cert role can save BF/AT */
-body.role-cert .cert-save{display:inline-flex!important}
-body.role-deo .cert-save{display:none!important}
-body.role-cert .navbtn[data-page="dashboard"],
-body.role-cert .navbtn[data-page="student"],
-body.role-cert .navbtn[data-page="lc"],
-body.role-cert .dcard[data-page="student"],
-body.role-cert .dcard[data-page="lc"]{display:none!important}
-/* User Management: Add/Edit/Delete User panel — फक्त Super Master; Change-password panel सर्वांना */
-body.role-deo #userMgmtAdminCards,
-body.role-cert #userMgmtAdminCards,
-body.role-master #userMgmtAdminCards{display:none!important}
-/* सर्व Users ला आता Google Sheets URL + Load Students सुविधा उपलब्ध (V19.15) */
 
-/* ===== CLASS TEACHER ROLE (V19.27) — फक्त स्वतःच्या वर्गाचे Teacher पान दिसते ===== */
-body.role-teacher .navbtn:not([data-page="teacher"]),
-body.role-teacher .dcard:not([data-page="teacher"]){display:none!important}
-body.role-teacher .master-only,
-body.role-teacher .edit-only{display:none!important}
-body.role-teacher .tch-back-btn{display:inline-block!important}
-.tch-tabbtn{background:var(--navy3);border:1px solid var(--navy2);color:var(--txt);padding:9px 14px;border-radius:20px;cursor:pointer;font-size:12.5px;font-weight:600;font-family:inherit;margin:0 6px 8px 0}
-.tch-tabbtn.active{background:var(--gold);color:#1a1200;border-color:var(--gold)}
-.tch-panel{display:none}
-.tch-panel.active{display:block}
-.tch-stat{background:var(--navy3);border:1px solid var(--navy2);border-radius:10px;padding:16px;text-align:center;border-top:3px solid var(--gold)}
-.tch-stat b{display:block;font-size:26px;color:var(--gold2)}
-.tch-stat span{font-size:11.5px;opacity:.8}
-.tch-roster-row{cursor:pointer}
-.tch-roster-row:hover{background:rgba(212,144,42,.12)}
-.pill{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700}
-.pill-absent{background:#7a1a1a;color:#fff}
-.pill-present{background:#1a7a3a;color:#fff}
-
-/* ===== LOGIN ===== */
-.login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#0d1b35,#1a2a4a 55%,#102445)}
-body:not(.auth-locked) .login-screen{display:none}
-.login-card{width:min(420px,100%);background:rgba(26,42,74,.96);border:2px solid var(--gold);border-radius:10px;box-shadow:var(--sh);overflow:hidden}
-.login-head{padding:22px;background:linear-gradient(90deg,var(--navy3),var(--navy2));border-bottom:2px solid var(--gold);text-align:center}
-.login-head h1{font-size:18px;color:var(--gold2);font-weight:700;margin-top:8px}
-.login-head p{font-size:12px;color:rgba(240,232,216,.72);margin-top:4px}
-.login-body{padding:22px}
-.login-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
-.login-field label{font-size:12px;color:var(--gold2);font-weight:700}
-.login-field input{background:var(--peach);border:1.5px solid var(--pb);border-radius:var(--r);padding:10px 12px;font-size:14px;color:#2a1a0a;font-family:inherit}
-.login-field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,144,42,.2);outline:none}
-.login-status{margin-top:12px;padding:8px 10px;border-radius:var(--r);font-size:12px;display:none}
-.login-status.err{display:block;background:#4a1a1a;color:#ffb0b0;border:1px solid #8a2a2a}
-.user-chip{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:rgba(13,27,53,.75);border:1px solid rgba(212,144,42,.45);border-radius:999px;padding:6px 10px;color:var(--gold2);font-size:11px;font-weight:700}
-.logout-btn{background:#5a2020;border:1px solid #9a3a3a;color:#ffd0d0;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer}
-.locked-input{opacity:.72;cursor:not-allowed!important}
-
-/* ===== NAV ===== */
-.topnav{background:var(--navy3);border-bottom:3px solid var(--gold);display:flex;align-items:center;padding:0 20px;gap:4px;flex-wrap:wrap}
-.topnav .brand{font-size:13px;font-weight:700;color:var(--gold2);padding:14px 10px 14px 0;margin-right:10px;border-right:1px solid var(--navy2);white-space:nowrap}
-.navbtn{background:none;border:none;color:var(--txt);padding:14px 16px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;border-bottom:3px solid transparent;margin-bottom:-3px;transition:.2s;white-space:nowrap}
-.navbtn:hover{color:var(--gold2);border-bottom-color:var(--gold2)}
-.navbtn.active{color:var(--gold);border-bottom-color:var(--gold);background:rgba(212,144,42,.1)}
-
-/* ===== CONFIG BAR ===== */
-.cfgbar{background:var(--navy2);padding:8px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--navy3)}
-.cfgbar label{font-size:11px;color:var(--gold2);font-weight:600;white-space:nowrap}
-.cfgbar input{padding:5px 9px;border-radius:var(--r);border:1px solid var(--pb);background:var(--peach);font-size:11px;color:#333;width:320px}
-.cfgbar .hint{font-size:10px;color:rgba(240,232,216,.5)}
-
-/* ===== PAGE ===== */
-.page{display:none;padding:20px;max-width:1200px;margin:0 auto}
-.page.active{display:block}
-
-/* ===== CARD ===== */
-.card{background:var(--navy);border:2px solid var(--gold);border-radius:10px;overflow:hidden;box-shadow:var(--sh)}
-.card-header{background:linear-gradient(90deg,var(--navy3),var(--navy2));padding:14px 22px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:14px}
-.card-header h2{font-size:16px;color:var(--gold2);font-weight:700}
-.card-header p{font-size:11px;opacity:.7;margin-top:2px}
-.card-body{padding:18px 22px}
-
-/* ===== FORM FIELDS ===== */
-.frow{display:flex;gap:10px;margin-bottom:10px;align-items:flex-end;flex-wrap:wrap}
-.fg{display:flex;flex-direction:column;gap:3px}
-.fg label{font-size:11px;color:var(--txt);font-weight:600;white-space:nowrap}
-.fg input,.fg select,.fg textarea{background:var(--peach);border:1.5px solid var(--pb);border-radius:var(--r);padding:6px 9px;font-size:12px;color:#2a1a0a;font-family:inherit;transition:.2s}
-.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(212,144,42,.2);outline:none}
-.fg textarea{resize:vertical;min-height:56px}
-.w60{width:60px} .w80{width:80px} .w100{width:100px} .w120{width:120px}
-.w150{width:150px} .w180{width:180px} .w220{width:220px} .w260{width:260px}
-.wf{flex:1;min-width:100px}
-
-/* ===== BUTTONS ===== */
-.btn{padding:8px 18px;border:none;border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:.2s}
-.btn:hover{filter:brightness(1.15);transform:translateY(-1px)}
-.btn-orange{background:var(--orange);color:#fff}
-.btn-green{background:var(--green);color:#fff}
-.btn-red{background:var(--red);color:#fff}
-.btn-blue{background:var(--blue);color:#fff}
-.btn-gray{background:#555;color:#fff}
-.btn-gold{background:var(--gold);color:#1a2a4a}
-.btn-sm{padding:6px 12px;font-size:12px}
-
-.abtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:2px solid var(--navy2)}
-
-/* ===== STATUS ===== */
-.status{margin-top:10px;padding:9px 14px;border-radius:var(--r);font-size:12px;display:none}
-.status.ok{background:#1a4a2a;color:#7ef7a0;border:1px solid #2a8a4a;display:block}
-.status.err{background:#4a1a1a;color:#f77e7e;border:1px solid #8a2a2a;display:block}
-
-/* ===== DIVIDER ===== */
-.div{height:1px;background:linear-gradient(90deg,transparent,var(--navy2),transparent);margin:12px 0}
-.sec-title{font-size:11px;font-weight:700;color:var(--gold2);letter-spacing:.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--navy3)}
-
-/* ===== LC EXTRA FIELDS ===== */
-.lc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-@media(max-width:700px){.lc-grid{grid-template-columns:1fr 1fr}}
-
-/* ===== DASHBOARD CARDS ===== */
-.dash{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
-.dcard{background:var(--navy3);border:1px solid var(--navy2);border-radius:10px;padding:20px;cursor:pointer;transition:.2s;text-align:center;border-top:3px solid var(--gold)}
-.dcard:hover{border-top-color:var(--gold2);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
-.dcard .icon{font-size:36px;margin-bottom:10px}
-.dcard h3{font-size:14px;color:var(--gold2);font-weight:700}
-.dcard p{font-size:11px;color:rgba(240,232,216,.6);margin-top:4px}
-
-/* ===== SEARCH BOX ===== */
-.searchbox{background:var(--navy3);border:1px solid var(--navy2);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.searchbox label{font-size:12px;font-weight:700;color:var(--gold2);white-space:nowrap}
-.searchbox input{background:var(--peach);border:1.5px solid var(--pb);border-radius:var(--r);padding:7px 10px;font-size:13px;color:#2a1a0a;font-family:inherit;width:200px}
-.searchbox input:focus{border-color:var(--gold);outline:none}
-
-/* ===== PHOTO ===== */
-.photo-box{width:88px;height:106px;border:2px dashed var(--pb);border-radius:var(--r);background:var(--peach);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:#a07050;text-align:center;overflow:hidden;position:relative;flex-shrink:0}
-.photo-box img{width:100%;height:100%;object-fit:cover;position:absolute}
-.photo-box input{display:none}
-.cert-photo-box{width:24mm;height:30mm;border:1px solid #333;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto}
-.cert-photo-box img{width:100%;height:100%;object-fit:cover;display:block}
-.cert-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:8pt;color:#666;font-family:'Noto Sans Devanagari',sans-serif}
-
-/* ===== PRINT ===== */
-@page cert-a4{size:210mm 297mm;margin:0}
-@page cert-a5{size:A5 portrait;margin:0}
-@page cert-bfat{size:210mm 297mm;margin:10mm 0 0 0}
-@media print{
-  body > *:not(#certModal){display:none!important}
-  #certModal{position:static!important;background:white!important}
-  #certModal .modal-overlay{position:static!important;background:none!important}
-  #certModal .modal-box{box-shadow:none!important;max-width:100%!important;width:100%!important}
-  .modal-hdr,.cert-close,.cert-actions{display:none!important}
-  #certContent{padding:0!important}
-  .cert-page.a4{page:cert-a4}
-  .cert-page.a5{page:cert-a5}
-  /* BF/AT direct print — पानाच्या वर मार्जिन बरोबर 10mm, आतील padding दुप्पट होऊ नये म्हणून 0 */
-  .cert-page.a4-noborder{page:cert-bfat;padding-top:0!important}
-  .cert-draft-watermark{display:flex!important}
-  @page{size:A4;margin:0}
-}
-@media screen and (max-width:600px){
-  #certContent{transform-origin:top left}
-}
-
-/* ===== CERTIFICATE MODAL ===== */
-#certModal{display:none;position:fixed;inset:0;z-index:9999;overflow-y:auto;background:rgba(0,0,0,.7)}
-#certModal.open{display:block}
-.modal-overlay{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:20px}
-.modal-box{background:#fff;width:210mm;max-width:98vw;border-radius:4px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-#certModal[data-page-size="a5"] .modal-box{width:148mm}
-.modal-hdr{background:#1a2a4a;color:#d4902a;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;font-family:'Poppins',sans-serif;font-size:13px;font-weight:700}
-.cert-close{background:#c0521a;border:none;color:#fff;padding:5px 14px;border-radius:4px;cursor:pointer;font-weight:700}
-.cert-actions{display:flex;gap:8px;padding:8px 16px;background:#f0f0f0;border-bottom:1px solid #ddd}
-.cert-actions button{padding:6px 16px;border:none;border-radius:4px;font-weight:700;cursor:pointer;font-size:13px}
-#certContent{padding:8px 12px;font-family:'Mukta',sans-serif}
-#certContent,#certContent *{color:#000!important;font-family:'Mukta',sans-serif!important}
-#certContent b,#certContent strong,#certContent .val,#certContent .lbl,#certContent .cbox,#certContent .cert-title-box,#certContent .cert-school-name-main{font-weight:700!important}
-
-/* ===== CERTIFICATE DESIGN ===== */
-.cert-page{margin:0 auto;background:#fff;box-sizing:border-box;position:relative}
-
-/* LC keeps border */
-.cert-page.a4{width:210mm;min-height:297mm;padding:10mm;border:2px solid #000}
-.cert-page.a4 .cert-outer-border{border:1.5px solid #000;padding:5mm;height:100%;box-sizing:border-box}
-
-/* ===== BONAFIDE & ATTENDANCE — A4, NO BORDERS ===== */
-.cert-page.a4-noborder{width:210mm;min-height:297mm;padding:10mm 10mm 10mm 15mm;border:none}
-.cert-page.a4-noborder .cert-outer-border{border:none;padding:0;height:100%;box-sizing:border-box}
-
-.cert-school-name-mr{font-family:'Noto Serif Devanagari',serif;font-size:8pt;text-align:center;color:#555;font-weight:600;line-height:1.3}
-.cert-school-name-main{font-family:'Noto Serif Devanagari',serif;font-size:15pt;text-align:center;color:#1a2a4a;font-weight:900;line-height:1.2;margin:2mm 0}
-.cert-info-table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:2mm}
-.cert-info-table td{padding:1mm 2mm;color:#222;font-family:'Noto Sans Devanagari',sans-serif}
-.cert-title-box{text-align:center;border:2px solid #1a2a4a;display:inline-block;padding:1mm 6mm;font-size:11pt;font-weight:700;color:#1a2a4a;font-family:'Noto Serif Devanagari',serif;margin:2mm auto}
-.cert-sub-title{text-align:center;font-size:9pt;font-weight:600;color:#333;font-family:'Noto Serif Devanagari',serif;margin:1mm 0 3mm}
-.cert-field-table{width:100%;border-collapse:collapse;font-size:8.5pt;font-family:'Noto Sans Devanagari',sans-serif}
-.cert-field-table tr{vertical-align:top}
-.cert-field-table td.lbl{color:#333;width:58mm;padding:1.2mm 2mm;font-weight:600;border-bottom:0.5px solid #ddd}
-.cert-field-table td.val{color:#000;padding:1.2mm 2mm;font-weight:700;border-bottom:0.5px solid #ddd}
-.cert-field-table td.sep{width:5mm;color:#555;text-align:center;padding:1.2mm 0;border-bottom:0.5px solid #ddd}
-.cert-box-grid{display:flex;gap:2mm;margin:2mm 0}
-.cert-box-grid .cbox{border:1px solid #222;min-width:7mm;min-height:7mm;text-align:center;font-size:9pt;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:'Noto Sans Devanagari',sans-serif}
-.date-boxes .cbox{min-width:5.5mm}
-.date-boxes .cbox.dash{min-width:3.5mm;border-color:transparent}
-.cert-divider{border:none;border-top:1px solid #000;margin:3mm 0}
-.cert-footer-line{display:flex;justify-content:space-between;margin-top:8mm;font-size:8pt;font-family:'Noto Sans Devanagari',sans-serif}
-.cert-sig-line{border-top:1px solid #000;width:55mm;text-align:center;padding-top:1mm;font-size:7.5pt}
-.cert-remark-box{background:#f9f6f1;padding:2mm 3mm;font-size:8pt;font-family:'Noto Sans Devanagari',sans-serif;color:#333;margin:2mm 0}
-
-/* Bonafide/Attendance paragraph style */
-.cert-para{font-family:'Noto Serif Devanagari',serif;font-size:9.5pt;line-height:1.8;color:#111;text-align:justify;margin-bottom:3mm}
-.cert-para b{color:#000}
-.cert-meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm;font-size:8pt;font-family:'Noto Sans Devanagari',sans-serif}
-.cert-udise-row{display:flex;justify-content:space-between;padding-bottom:1.5mm;margin-bottom:3mm;font-size:7.5pt;font-family:'Noto Sans Devanagari',sans-serif}
-
-/* A4-noborder overrides for BF/AT */
-.cert-page.a4-noborder .cert-para{font-size:12pt!important;line-height:1.75;margin-bottom:3mm;font-weight:400}
-.cert-page.a4-noborder .cert-udise-row{font-size:7.5pt;margin-bottom:3mm;border-bottom:none}
-.cert-page.a4-noborder .cert-remark-box{font-size:8pt;padding:2mm 3mm;margin:2mm 0;border:none;background:#f9f6f1}
-.cert-page.a4-noborder .cert-footer-line{margin-top:20mm!important;font-size:8pt}
-.cert-page.a4-noborder [style*="font-size:14pt"]{font-size:14pt!important}
-.cert-page.a4-noborder [style*="font-size:12pt"]{font-size:12pt!important}
-
-/* ===== DASHBOARD STATS (V19.8) ===== */
-.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:0 0 20px}
-.stat-card{background:var(--navy3);border:1px solid var(--navy2);border-top:3px solid var(--gold);border-radius:10px;padding:16px;text-align:center}
-.stat-card .sc-num{font-size:26px;font-weight:900;color:var(--gold2)}
-.stat-card .sc-lbl{font-size:11.5px;opacity:.75;margin-top:4px}
-.dash-panel{background:var(--navy3);border:1px solid var(--navy2);border-radius:10px;padding:16px 18px;margin-bottom:20px}
-.dash-panel h4{font-size:13px;color:var(--gold2);margin-bottom:12px;font-weight:700}
-.bar-chart-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px}
-.bar-chart-row .bcr-lbl{width:48px;flex-shrink:0;opacity:.85}
-.bar-chart-row .bcr-track{flex:1;background:rgba(255,255,255,.08);border-radius:4px;height:16px;overflow:hidden}
-.bar-chart-row .bcr-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:4px;transition:width .4s}
-.bar-chart-row .bcr-val{width:34px;text-align:right;flex-shrink:0;font-weight:700;color:var(--gold2)}
-#dashStatsLoading{font-size:12px;opacity:.6;text-align:center;padding:10px}
-
-/* ===== SEARCH: thumbnail + hover preview + recent (V19.8) ===== */
-.srch-thumb{width:34px;height:40px;object-fit:cover;border-radius:3px;border:1px solid #c5d4e8;background:#fff;cursor:pointer}
-.srch-thumb-wrap{position:relative;display:inline-block}
-.srch-preview-card{display:none;position:absolute;left:42px;top:-10px;z-index:50;background:#fff;border:2px solid var(--gold);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.35);padding:10px;width:190px;text-align:center}
-.srch-thumb-wrap:hover .srch-preview-card{display:block}
-.srch-preview-card img{width:100px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ddd;margin-bottom:6px}
-.srch-preview-card .spc-name{font-size:12px;font-weight:800;color:#1a1a2a}
-.srch-preview-card .spc-meta{font-size:11px;color:#555;margin-top:2px}
-.recent-search-wrap{margin-bottom:12px}
-.recent-search-wrap .rs-title{font-size:11.5px;color:#5a3a00;font-weight:700;margin-bottom:6px}
-.rs-chip{display:inline-flex;align-items:center;gap:6px;background:#fff8ee;border:1.5px solid var(--gold2);border-radius:999px;padding:5px 12px;margin:0 6px 6px 0;font-size:12px;color:#5a3a00;cursor:pointer;font-weight:600}
-.rs-chip:hover{background:var(--gold2);color:#fff}
-
-/* ===== CERTIFICATE DRAFT WATERMARK (V19.8) ===== */
-.cert-draft-watermark{display:none;position:absolute;inset:0;align-items:center;justify-content:center;pointer-events:none;z-index:5;overflow:hidden}
-.cert-draft-watermark span{font-size:70pt;font-weight:900;color:rgba(200,20,20,.18);transform:rotate(-32deg);letter-spacing:8px;font-family:'Poppins',sans-serif;white-space:nowrap}
-@media screen{.cert-draft-watermark{display:flex}}
-
-/* ===== HISTORY PAGE (V19.8) ===== */
-.hist-table{width:100%;border-collapse:collapse;font-size:13px}
-.hist-table th{background:var(--navy2);color:var(--gold);text-align:left;padding:8px 10px;white-space:nowrap}
-.hist-table td{padding:7px 10px;border-bottom:1.5px solid #c5d4e8}
-
-/* ===== STUDENT PROFILE PAGE (V19.13) ===== */
-.profile-hero{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;background:var(--navy3);border:1px solid var(--navy2);border-top:3px solid var(--gold);border-radius:12px;padding:20px;margin-bottom:18px}
-.profile-photo-wrap{flex-shrink:0;width:130px;height:155px;border-radius:10px;overflow:hidden;border:2px solid var(--gold2);background:#eef3ff;display:flex;align-items:center;justify-content:center}
-.profile-photo-wrap img{width:100%;height:100%;object-fit:cover}
-.profile-photo-wrap .ph-placeholder{font-size:40px;color:#9ab}
-.profile-headline h2{font-size:20px;color:var(--gold2);margin-bottom:4px}
-.profile-headline .ph-meta{font-size:13px;opacity:.8;margin-bottom:8px}
-.profile-contact-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
-.pc-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:999px;font-size:12.5px;font-weight:700;text-decoration:none;border:none;cursor:pointer}
-.pc-call{background:#1a6a3a;color:#fff}
-.pc-wa{background:#25D366;color:#fff}
-.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.profile-field{background:var(--navy3);border:1px solid var(--navy2);border-radius:8px;padding:10px 14px}
-.profile-field .pf-lbl{font-size:11px;opacity:.65;margin-bottom:3px}
-.profile-field .pf-val{font-size:14px;font-weight:600;color:#eaf2ff}
-#profile_empty{text-align:center;padding:40px 10px;color:#888;font-size:13px}
-.hist-type-lc{color:#0a3a8a;font-weight:800}
-.hist-type-bf{color:#1a6a1a;font-weight:800}
-.hist-type-at{color:#8a5a0a;font-weight:800}
-
-/* ===== SESSION TIMEOUT WARNING ===== */
-#sessionTimeoutToast{display:none;position:fixed;bottom:20px;right:20px;background:#5a2020;color:#ffd0d0;border:1.5px solid #9a3a3a;border-radius:8px;padding:12px 18px;font-size:12.5px;z-index:99999;max-width:280px;box-shadow:0 6px 20px rgba(0,0,0,.4)}
-
-/* ===== MOBILE TOUCH-FRIENDLY (V19.8) ===== */
-@media screen and (max-width:640px){
-  .stat-cards{grid-template-columns:repeat(2,1fr)}
-  .btn,.navbtn,.cert-actions button,.frow .btn{min-height:44px;font-size:14px!important}
-  #pg-bonafide .btn,#pg-attendance .btn,#pg-bonafide button,#pg-attendance button{padding:12px 18px!important;font-size:14.5px!important}
-  .cert-actions{flex-wrap:wrap}
-  .cert-actions button{flex:1 1 45%;min-height:46px}
-  .modal-box{width:100%!important}
-  .srch-thumb{width:30px;height:36px}
-  table#srch_table td,table#srch_table th{padding:6px 6px;font-size:12px}
-}
-@media print{
-  html,body{width:210mm;height:297mm}
-  #certModal .modal-box{width:210mm!important}
-}
-</style>
 </head>
 <body class="auth-locked">
 
@@ -1663,6 +1351,803 @@ body:not(.auth-locked) .login-screen{display:none}
 
 
 
+<!-- ===== APPS SCRIPT (expand to copy) ===== -->
+<details class="master-only" style="display:none !important;max-width:1200px;margin:16px auto;background:rgba(26,42,74,.9);border:1px solid rgba(212,144,42,.4);border-radius:10px;padding:16px;color:#c8d8f0;font-size:12px">
+<summary style="cursor:pointer;color:#e8b05a;font-weight:700;font-size:13px">⚙️ Google Apps Script Code — Click to Expand & Copy</summary>
+<button onclick="var p=document.getElementById('appsScriptCode'),b=this;p.style.display=p.style.display==='none'?'block':'none';b.textContent=p.style.display==='none'?'🔽 Apps Script Code दाखवा':'🔼 Apps Script Code लपवा';" style="background:#1a3a6a;color:#a0d0ff;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;margin:8px 0 4px;display:block">🔽 Apps Script Code दाखवा</button>
+<pre id="appsScriptCode" style="background:#0d1b35;padding:14px;border-radius:6px;margin-top:4px;overflow-x:auto;font-size:11px;color:#a0d0ff;white-space:pre-wrap;display:none">
+var MAIN_HEADERS = [
+  "Timestamp","Acad Year","Reg No","Student ID","Book No","Aadhar",
+  "Class","Division","PEN","Roll No","Full Name",
+  "Mother Name","Gender","Religion","Caste","Sub-caste","DOB","DOB Words",
+  "Nationality","Mother Tongue","Birth Place",
+  "Previous School","Admission Date","Admission Class",
+  "Contact","Address","Photo URL"
+];
+var LC_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name","Gender",
+  "DOB","DOB Words","Class","Religion","Caste","Nationality","Mother Tongue",
+  "Admission Date","Admission Class","Leave Date","Leave Class","Class Start Date",
+  "LC No","LC Date","Conduct","Progress","Stxt75","Stxt76","Remarks",
+  "Medium","Next School","LC Count","Fee Status","Stxt60","Stxt61",
+  "Stxt62","Stxt63","Stxt67","Stxt68","Stxt69","Stxt70","Nationality Type"
+];
+var BF_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name",
+  "DOB","DOB Words","Class","Tukdi","Religion","Caste","Nationality",
+  "Acad Year","BF Date","Purpose","Admission Date","Admission Class",
+  "Remarks","Address","Contact"
+];
+var AT_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name","Gender",
+  "DOB","Class","Tukdi","Acad Year","AT Date","Purpose",
+  "Total Days","Present Days","Percentage","From Date","To Date","Remarks"
+];
+var PHOTO_FOLDER_ID = "1urIudSUS7U0ClMTjvp__uZ0ZgTQ7GrbU";
+
+function getOrCreateSheet(name, headers) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(headers);
+  } else {
+    var existing = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), headers.length)).getValues()[0];
+    for (var i = 0; i &lt; headers.length; i++) {
+      if (!existing[i]) sh.getRange(1, i + 1).setValue(headers[i]);
+    }
+  }
+  return sh;
+}
+
+function findRowByKey(sh, col, key) {
+  key = (key || "").toString().trim().toLowerCase();
+  if (!key || !sh || sh.getLastRow() &lt; 2) return 0;
+  var vals = sh.getRange(2, col, sh.getLastRow()-1, 1).getValues();
+  for (var i=0; i&lt;vals.length; i++) {
+    if ((vals[i][0] || "").toString().trim().toLowerCase() === key) return i + 2;
+  }
+  return 0;
+}
+
+function writeRow(sh, rowNum, row) {
+  if (rowNum) {
+    sh.getRange(rowNum, 1, 1, row.length).setValues([row]);
+    return {rowIndex: rowNum, mode: "updated"};
+  }
+  sh.appendRow(row);
+  return {rowIndex: sh.getLastRow(), mode: "created"};
+}
+
+function doPost(e) {
+  var p = e.parameter || {};
+  if (p.action === "uploadPhoto") {
+    var photoResult = handlePhotoUpload(p);
+    return ContentService.createTextOutput(JSON.stringify(photoResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return handleAction(p, ""); // "" = JSON response — serial परत frontend ला येतो
+}
+
+function doGet(e) {
+  var p = e.parameter || {};
+  var cb = p.callback || "";
+  if (!p.action &amp;&amp; (p.regNo || p.studentId || p.firstName)) p.action = "upsert";
+  if (p.action === "verify") {
+    return doVerifyPage(p);
+  }
+  if (p.action === "ping") {
+    try {
+      var ssName = SpreadsheetApp.getActiveSpreadsheet().getName();
+      return wrap(cb, {status:"ok", message:"Connected! Sheet: " + ssName});
+    } catch(ex) {
+      return wrap(cb, {status:"error", message:"Script is deployed but NOT BOUND to a Sheet! Re-deploy from inside the Sheet."});
+    }
+  }
+  if (p.action === "getAll") {
+    return doGetAllAction(p, cb);
+  }
+  if (p.action === "testPhotoFolder") {
+    return wrap(cb, testPhotoFolderAccess());
+  }
+  if (p.action === "photoChunkStart") {
+    return wrap(cb, startPhotoChunkUpload(p));
+  }
+  if (p.action === "photoChunk") {
+    return wrap(cb, savePhotoChunk(p));
+  }
+  if (p.action === "photoChunkFinish") {
+    return wrap(cb, finishPhotoChunkUpload(p));
+  }
+  if (p.action === "getPhotoUrl" &amp;&amp; p.regNo) {
+    return wrap(cb, getPhotoUrlByRegNo(p.regNo));
+  }
+  if (p.action === "search" &amp;&amp; p.q) {
+    return doSearchAction(p, cb);
+  }
+  if (p.action === "getDashboardStats") {
+    return doGetDashboardStats(p, cb);
+  }
+  if (p.action === "getStudentHistory") {
+    return doGetStudentHistory(p, cb);
+  }
+  if (p.action === "getAllCertificates") {
+    return doGetAllCertificates(p, cb);
+  }
+  if (p.action === "getUsers") {
+    return doGetUsers(p, cb);
+  }
+  if (p.action === "saveUser") {
+    return doSaveUser(p, cb);
+  }
+  if (p.action === "deleteUser") {
+    return doDeleteUser(p, cb);
+  }
+  if (p.action === "changePassword") {
+    return doChangePassword(p, cb);
+  }
+  if (p.action === "getAnalyticsData") {
+    return doGetAnalyticsData(p, cb);
+  }
+  if (p.action === "verify") {
+    return doVerifyPage(p);
+  }
+  var a = p.action || "";
+  if (a.indexOf("save") === 0 || a.indexOf("upsert") === 0 ||
+      a.indexOf("update") === 0) {
+    return handleAction(p, cb);
+  }
+  return wrap(cb, {status:"ok", message:"Running!"});
+}
+
+function getNextSerial(sh) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return 1;
+  var vals = sh.getRange(2, 2, lastRow - 1, 1).getValues();
+  var max = 0;
+  for (var i = 0; i < vals.length; i++) {
+    var n = parseInt(vals[i][0], 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
+function handleAction(d, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return wrap(cb, {status:"error", message:"Script NOT bound to a Sheet. Open Sheet → Extensions → Apps Script."});
+    var action = d.action || "upsert";
+    var result = {rowIndex:0, mode:"created"};
+
+    if (action === "save" || action === "update" || action === "upsert") {
+      var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+      var row = [new Date().toLocaleString("en-IN"),
+        d.acYear,d.regNo,d.studentId,d.bookNo,d.aadhar,d.iyatta,d.tukdi,
+        d.pen,d.rollNo,d.firstName,d.motherName,d.gender,
+        d.religion,d.caste,d.subcaste,d.dob,d.dobWords,d.nationality,d.motherTongue,
+        d.birthVillage,d.prevSchool,
+        d.admissionDate,d.admissionClass,d.contact,d.address,d.photoUrl];
+      var rowToWrite = 0;
+      if (action === "update" &amp;&amp; d.rowIndex) rowToWrite = parseInt(d.rowIndex,10);
+      if (action === "upsert") rowToWrite = findRowByKey(sh, 3, d.regNo) || findRowByKey(sh, 4, d.studentId);
+      result = writeRow(sh, rowToWrite, row);
+    } else if (action === "save_lc" || action === "update_lc" || action === "upsert_lc") {
+      var sh = getOrCreateSheet("LC", LC_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक LC ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var lcSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        lcSerial,d.stxt1,d.firstName,d.gender,d.dob,d.dobWords,
+        d.iyatta,d.religion,d.caste,d.nationality,d.motherTongue,
+        d.admissionDate,d.admissionClass,d.lcLeaveDate,d.lcLeaveClass,d.classStartDate,
+        d.lcNo,d.lcDate,d.conduct,d.progress,d.stxt75,d.stxt76,d.remarks,
+        d.medium,d.nextSchool,d.lcCount,d.feeStatus,
+        d.stxt60,d.stxt61,d.stxt62,d.stxt63,d.stxt67,d.stxt68,d.stxt69,d.stxt70,d.nationalityType];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = lcSerial;
+    } else if (action === "save_bf" || action === "upsert_bf") {
+      var sh = getOrCreateSheet("Bonafide", BF_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक Bonafide ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var bfSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        bfSerial,d.stxt1,d.firstName,d.dob,d.dobWords,
+        d.iyatta,d.tukdi,d.religion,d.caste,d.nationality,
+        d.acYear,d.bfDate,d.purpose,d.admissionDate,d.admissionClass,
+        d.remarks,d.address,d.contact];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = bfSerial;
+    } else if (action === "save_at" || action === "upsert_at") {
+      var sh = getOrCreateSheet("Attendance", AT_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक Attendance certificate ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var atSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        atSerial,d.stxt1,d.firstName,d.gender,d.dob,
+        d.iyatta,d.tukdi,d.acYear,d.atDate,d.purpose,
+        d.totalDays,d.presentDays,d.pct,d.fromDate,d.toDate,d.remarks];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = atSerial;
+    } else {
+      return wrap(cb, {status:"error", message:"Unknown action: "+action});
+    }
+    logAudit(d.auditUser, d.auditRole, action, result.serial || d.regNo || d.stxt1 || "");
+    return wrap(cb, {status:"ok", rowIndex:result.rowIndex, action:action, mode:result.mode, serial:result.serial||""});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== AUDIT LOG (V19.8) — कोणत्या User ने कधी काय Save केले =====
+function logAudit(user, role, action, refInfo) {
+  try {
+    var sh = getOrCreateSheet("Log", ["Timestamp","User","Role","Action","Reference"]);
+    sh.appendRow([new Date().toLocaleString("en-IN"), user || "unknown", role || "", action || "", refInfo || ""]);
+  } catch(e) {
+    // Logging failure should never block the main save operation
+  }
+}
+
+// ===== DASHBOARD LIVE STATS (V19.8) =====
+function doGetDashboardStats(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var todayStr = fmt(new Date());
+    var now = new Date();
+    var monthKey = now.getFullYear() + "-" + ("0"+(now.getMonth()+1)).slice(-2);
+
+    var stSh = ss.getSheetByName("Students");
+    var totalStudents = 0;
+    var classCounts = {};
+    if (stSh &amp;&amp; stSh.getLastRow() &gt; 1) {
+      var stRows = stSh.getRange(2, 1, stSh.getLastRow()-1, 11).getValues();
+      for (var i=0;i&lt;stRows.length;i++) {
+        if (!stRows[i][2] &amp;&amp; !stRows[i][10]) continue;
+        totalStudents++;
+        var cls = (stRows[i][6]||"").toString().trim();
+        if (cls) classCounts[cls] = (classCounts[cls]||0) + 1;
+      }
+    }
+
+    function countTodayAndMonth(sheetName) {
+      var sh = ss.getSheetByName(sheetName);
+      var today = 0, month = 0;
+      if (sh &amp;&amp; sh.getLastRow() &gt; 1) {
+        var rows = sh.getRange(2, 1, sh.getLastRow()-1, 1).getValues();
+        for (var i=0;i&lt;rows.length;i++) {
+          var ts = rows[i][0];
+          if (!ts) continue;
+          var d = new Date(ts);
+          if (isNaN(d.getTime())) continue;
+          var dKey = fmt(d);
+          var mKey = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2);
+          if (dKey === todayStr) today++;
+          if (mKey === monthKey) month++;
+        }
+      }
+      return {today:today, month:month};
+    }
+
+    var lcCounts = countTodayAndMonth("LC");
+    var bfCounts = countTodayAndMonth("Bonafide");
+    var atCounts = countTodayAndMonth("Attendance");
+    var monthCerts = lcCounts.month + bfCounts.month + atCounts.month;
+
+    return wrap(cb, {
+      status:"ok",
+      totalStudents: totalStudents,
+      todayLC: lcCounts.today,
+      todayBF: bfCounts.today,
+      monthCerts: monthCerts,
+      classCounts: classCounts
+    });
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== LC/BF/AT HISTORY FOR ONE STUDENT (V19.8) =====
+function doGetStudentHistory(p, cb) {
+  try {
+    var regNo = (p.regNo || "").toString().trim().toLowerCase();
+    if (!regNo) return wrap(cb, {status:"error", message:"regNo required"});
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var out = [];
+
+    function scan(sheetName, type, detailFn) {
+      var sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() &lt; 2) return;
+      var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if ((r[2]||"").toString().trim().toLowerCase() !== regNo) continue;
+        out.push({
+          type: type,
+          serial: r[1],
+          date: fmt(r[0]),
+          detail: detailFn(r)
+        });
+      }
+    }
+    scan("LC", "LC", function(r){ return "LC No: " + (r[17]||"—"); });
+    scan("Bonafide", "BF", function(r){ return "Purpose: " + (r[13]||"—"); });
+    scan("Attendance", "AT", function(r){ return "Purpose: " + (r[10]||"—"); });
+
+    out.sort(function(a,b){ return (a.date &lt; b.date) ? 1 : -1; });
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== BULK EXPORT — ALL LC/BF/AT (V19.8) =====
+function doGetAllCertificates(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var out = [];
+
+    function scan(sheetName, type, detailFn) {
+      var sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() &lt; 2) return;
+      var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if (!r[2]) continue;
+        out.push({
+          type: type,
+          serial: r[1],
+          date: fmt(r[0]),
+          regNo: r[2],
+          firstName: r[3],
+          detail: detailFn(r)
+        });
+      }
+    }
+    scan("LC", "LC", function(r){ return "LC No: " + (r[17]||"—"); });
+    scan("Bonafide", "BF", function(r){ return "Purpose: " + (r[13]||"—"); });
+    scan("Attendance", "AT", function(r){ return "Purpose: " + (r[10]||"—"); });
+
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// =====================================================
+// 👥 USER MANAGEMENT PRO (V19.9)
+// =====================================================
+var USER_HEADERS = ["Username","Password","Role","Label"];
+var DEFAULT_USERS_SEED = [
+  ["user_1","Pass@1234","master","Master User"],
+  ["user_2","Pass@1234","deo","DEO User"],
+  ["user_3","Pass@1234","cert","Certificate User"]
+];
+
+function getUsersSheet() {
+  var sh = getOrCreateSheet("Users", USER_HEADERS);
+  if (sh.getLastRow() &lt; 2) {
+    for (var i=0;i&lt;DEFAULT_USERS_SEED.length;i++) sh.appendRow(DEFAULT_USERS_SEED[i]);
+  }
+  return sh;
+}
+
+function doGetUsers(p, cb) {
+  try {
+    var sh = getUsersSheet();
+    var rows = sh.getRange(2, 1, sh.getLastRow()-1, 4).getValues();
+    var out = [];
+    for (var i=0;i&lt;rows.length;i++) {
+      if (!rows[i][0]) continue;
+      out.push({ rowIndex:i+2, username:rows[i][0], password:rows[i][1], role:rows[i][2], label:rows[i][3] });
+    }
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doSaveUser(p, cb) {
+  try {
+    // फक्त Super Master role असलेल्या logged-in user कडूनच call यायला हवा — frontend कडून व्हॅलिडेशन,
+    // तसेच backend मध्येही requesterRole तपासतो
+    if (p.requesterRole !== "super") {
+      return wrap(cb, {status:"error", message:"User Management अधिकार फक्त Super Master User ला आहे."});
+    }
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    if (!username) return wrap(cb, {status:"error", message:"Username आवश्यक आहे."});
+    var rowToWrite = findRowByKey(sh, 1, username);
+    var row = [username, p.password||"", p.role||"cert", p.label||username];
+    if (rowToWrite) {
+      sh.getRange(rowToWrite, 1, 1, 4).setValues([row]);
+    } else {
+      sh.appendRow(row);
+    }
+    logAudit(p.requesterUser, p.requesterRole, "saveUser", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doDeleteUser(p, cb) {
+  try {
+    if (p.requesterRole !== "super") {
+      return wrap(cb, {status:"error", message:"User Management अधिकार फक्त Super Master User ला आहे."});
+    }
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    var rowToWrite = findRowByKey(sh, 1, username);
+    if (!rowToWrite) return wrap(cb, {status:"error", message:"User सापडला नाही."});
+    sh.deleteRow(rowToWrite);
+    logAudit(p.requesterUser, p.requesterRole, "deleteUser", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doChangePassword(p, cb) {
+  try {
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    var rowToWrite = findRowByKey(sh, 1, username);
+    if (!rowToWrite) return wrap(cb, {status:"error", message:"User सापडला नाही."});
+    var current = sh.getRange(rowToWrite, 2).getValue();
+    if ((current||"").toString() !== (p.oldPassword||"").toString()) {
+      return wrap(cb, {status:"error", message:"जुना Password चुकीचा आहे."});
+    }
+    sh.getRange(rowToWrite, 2).setValue(p.newPassword||"");
+    logAudit(username, p.requesterRole, "changePassword", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// =====================================================
+// ✅ CERTIFICATE VERIFY PAGE — QR कोड scan केल्यावर उघडणारे पान (V19.9)
+// =====================================================
+function doVerifyPage(p) {
+  var type = (p.type||"").toString().toUpperCase();
+  var serial = (p.serial||"").toString().trim();
+  var sheetMap = { LC:"LC", BF:"Bonafide", AT:"Attendance" };
+  var sheetName = sheetMap[type];
+  var found = null;
+  try {
+    if (sheetName &amp;&amp; serial) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sh = ss.getSheetByName(sheetName);
+      if (sh &amp;&amp; sh.getLastRow() &gt; 1) {
+        var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+        for (var i=0;i&lt;rows.length;i++) {
+          if ((rows[i][1]||"").toString() === serial) {
+            found = { serial:rows[i][1], regNo:rows[i][2], firstName:rows[i][3], date:fmt(rows[i][0]) };
+            break;
+          }
+        }
+      }
+    }
+  } catch(e) {}
+
+  var html;
+  if (found) {
+    html = "&lt;div style='font-family:sans-serif;max-width:420px;margin:40px auto;padding:24px;border:2px solid #1a7a3a;border-radius:10px;text-align:center;background:#f4fff4'&gt;"
+      + "&lt;div style='font-size:40px'&gt;✅&lt;/div&gt;"
+      + "&lt;h2 style='color:#1a7a3a'&gt;Certificate Verified&lt;/h2&gt;"
+      + "&lt;p&gt;&lt;b&gt;Type:&lt;/b&gt; " + type + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Serial No:&lt;/b&gt; " + found.serial + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Reg No:&lt;/b&gt; " + found.regNo + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Name:&lt;/b&gt; " + found.firstName + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Date:&lt;/b&gt; " + found.date + "&lt;/p&gt;"
+      + "&lt;p style='font-size:12px;color:#666;margin-top:16px'&gt;Shri Govindram Seksaria High School, Pachora&lt;/p&gt;"
+      + "&lt;/div&gt;";
+  } else {
+    html = "&lt;div style='font-family:sans-serif;max-width:420px;margin:40px auto;padding:24px;border:2px solid #7a1a1a;border-radius:10px;text-align:center;background:#fff4f4'&gt;"
+      + "&lt;div style='font-size:40px'&gt;❌&lt;/div&gt;"
+      + "&lt;h2 style='color:#7a1a1a'&gt;Not Verified&lt;/h2&gt;"
+      + "&lt;p&gt;सदर Certificate आमच्या records मध्ये आढळले नाही.&lt;/p&gt;"
+      + "&lt;/div&gt;";
+  }
+  return HtmlService.createHtmlOutput(html);
+}
+
+// =====================================================
+// 📊 ANALYTICS &amp; REPORTING (V19.9)
+// =====================================================
+function classifyLcReason(remarks) {
+  var t = (remarks||"").toString().toLowerCase();
+  if (t.indexOf("बदली") !== -1 || t.indexOf("transfer") !== -1) return "Transfer";
+  if (t.indexOf("प्रगती") !== -1 || t.indexOf("progress") !== -1) return "Progress";
+  return "Other";
+}
+
+function doGetAnalyticsData(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var admissionsByYear = {};
+    var genderCounts = {};
+    var religionCounts = {};
+    var casteCounts = {};
+    var lcReasonCounts = { Transfer:0, Progress:0, Other:0 };
+
+    var stSh = ss.getSheetByName("Students");
+    if (stSh &amp;&amp; stSh.getLastRow() &gt; 1) {
+      var rows = stSh.getRange(2, 1, stSh.getLastRow()-1, 26).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if (!r[2] &amp;&amp; !r[10]) continue;
+        var admDate = r[22];
+        if (admDate) {
+          var yr = (admDate instanceof Date) ? admDate.getFullYear() : new Date(admDate).getFullYear();
+          if (!isNaN(yr)) admissionsByYear[yr] = (admissionsByYear[yr]||0) + 1;
+        }
+        var gender = (r[12]||"Unknown").toString();
+        genderCounts[gender] = (genderCounts[gender]||0) + 1;
+        var religion = (r[13]||"Unknown").toString().trim();
+        if (religion) religionCounts[religion] = (religionCounts[religion]||0) + 1;
+        var caste = (r[14]||"Unknown").toString().trim();
+        if (caste) casteCounts[caste] = (casteCounts[caste]||0) + 1;
+      }
+    }
+
+    var lcSh = ss.getSheetByName("LC");
+    if (lcSh &amp;&amp; lcSh.getLastRow() &gt; 1) {
+      var lcRows = lcSh.getRange(2, 1, lcSh.getLastRow()-1, 24).getValues();
+      for (var j=0;j&lt;lcRows.length;j++) {
+        if (!lcRows[j][2]) continue;
+        var reason = classifyLcReason(lcRows[j][23]);
+        lcReasonCounts[reason] = (lcReasonCounts[reason]||0) + 1;
+      }
+    }
+
+    return wrap(cb, {
+      status:"ok",
+      admissionsByYear: admissionsByYear,
+      genderCounts: genderCounts,
+      religionCounts: religionCounts,
+      casteCounts: casteCounts,
+      lcReasonCounts: lcReasonCounts
+    });
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function wrap(cb, obj) {
+  var json = JSON.stringify(obj);
+  if (cb) {
+    return ContentService.createTextOutput(cb + "(" + json + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGetAllAction(p, cb) {
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Students");
+    if (!sh || sh.getLastRow() &lt; 2) return wrap(cb, {status:"ok", data:[]});
+    var rows = sh.getRange(2, 1, sh.getLastRow()-1, 27).getValues();
+    var all = [];
+    for (var i = 0; i &lt; rows.length; i++) {
+      var r = rows[i];
+      if (!r[10] &amp;&amp; !r[2]) continue; // रिकामी row वगळा
+      all.push({
+        _rowIndex: i + 2,
+        acYear:r[1], regNo:r[2], studentId:r[3], bookNo:r[4], aadhar:r[5],
+        iyatta:r[6], tukdi:r[7], pen:r[8], rollNo:r[9],
+        firstName:r[10], motherName:r[11], gender:r[12],
+        religion:r[13], caste:r[14], subcaste:r[15], dob:fmt(r[16]), dobWords:r[17],
+        nationality:r[18], motherTongue:r[19], birthVillage:r[20],
+        prevSchool:r[21], admissionDate:fmt(r[22]), admissionClass:r[23],
+        contact:r[24], address:r[25], photoUrl:r[26]
+      });
+    }
+    return wrap(cb, {status:"ok", data:all});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doSearchAction(p, cb) {
+  try {
+    var q = (p.q || "").toString().trim().toLowerCase();
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Students");
+    if (!sh || sh.getLastRow() &lt; 2) return wrap(cb,{status:"notfound"});
+    var rows = sh.getRange(2,1,sh.getLastRow()-1,27).getValues();
+    for (var i=0;i&lt;rows.length;i++) {
+      var r=rows[i];
+      var cands=[
+        (r[2]||"").toString().trim().toLowerCase(),
+        (r[3]||"").toString().trim().toLowerCase(),
+        (r[5]||"").toString().trim().toLowerCase(),
+        (r[10]||"").toString().trim().toLowerCase()
+      ];
+      if (cands.indexOf(q)!==-1) {
+        return wrap(cb,{status:"found",rowIndex:i+2,data:{
+          acYear:r[1],regNo:r[2],studentId:r[3],bookNo:r[4],aadhar:r[5],
+          iyatta:r[6],tukdi:r[7],pen:r[8],rollNo:r[9],
+          firstName:r[10],motherName:r[11],gender:r[12],
+          religion:r[13],caste:r[14],subcaste:r[15],dob:fmt(r[16]),dobWords:r[17],nationality:r[18],
+          motherTongue:r[19],birthVillage:r[20],
+          prevSchool:r[21],admissionDate:fmt(r[22]),admissionClass:r[23],
+          contact:r[24],address:r[25],photoUrl:r[26]
+        }});
+      }
+    }
+    return wrap(cb,{status:"notfound"});
+  } catch(err) {
+    return wrap(cb,{status:"error",message:err.toString()});
+  }
+}
+function fmt(v){
+  if(!v) return "";
+  if(v instanceof Date){
+    return v.getFullYear()+"-"+("0"+(v.getMonth()+1)).slice(-2)+"-"+("0"+v.getDate()).slice(-2);
+  }
+  return v.toString();
+}
+
+function cleanRegFileName(regNo) {
+  var text = (regNo || "student").toString().trim();
+  var bad = '\\/:*?"&lt;&gt;|#%&amp;{}$!\'@+=~';
+  var out = "";
+  for (var i = 0; i &lt; text.length; i++) {
+    var ch = text.charAt(i);
+    out += bad.indexOf(ch) &gt;= 0 ? "_" : ch;
+  }
+  return out || "student";
+}
+
+function publicDriveUrl(fileId) {
+  return "https://drive.google.com/thumbnail?id=" + fileId + "&amp;sz=w1000";
+}
+
+function testPhotoFolderAccess() {
+  try {
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var blob = Utilities.newBlob("ok", "text/plain", "_sgs_upload_test.txt");
+    var file = folder.createFile(blob);
+    file.setTrashed(true);
+    return {status:"ok", folderName:folder.getName(), folderId:PHOTO_FOLDER_ID};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function savePhotoData(regNo, photoData, mimeType) {
+  try {
+    regNo = (regNo || "").toString().trim();
+    if (!regNo) return {status:"error", message:"regNo required"};
+    if (!photoData) return {status:"error", message:"photoData required"};
+
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var fileName = cleanRegFileName(regNo) + ".jpg";
+    var existing = folder.getFilesByName(fileName);
+    while (existing.hasNext()) {
+      existing.next().setTrashed(true);
+    }
+    var bytes = Utilities.base64Decode(photoData);
+    if (bytes.length &gt; 10240) return {status:"error", message:"Photo size is " + bytes.length + " bytes. Please compress below 10 KB."};
+    var blob = Utilities.newBlob(bytes, mimeType || "image/jpeg", fileName);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var photoUrl = publicDriveUrl(file.getId());
+    updateStudentPhotoUrl(regNo, photoUrl);
+    return {status:"ok", regNo:regNo, photoUrl:photoUrl, fileId:file.getId()};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function handlePhotoUpload(p) {
+  return savePhotoData(p.regNo, p.photoData, p.mimeType);
+}
+
+function startPhotoChunkUpload(p) {
+  try {
+    if (!p.uploadId) return {status:"error", message:"uploadId required"};
+    var cache = CacheService.getScriptCache();
+    cache.put("photo_" + p.uploadId + "_meta", JSON.stringify({
+      regNo:p.regNo || "",
+      mimeType:p.mimeType || "image/jpeg",
+      count:parseInt(p.count || "0", 10)
+    }), 600);
+    return {status:"ok", uploadId:p.uploadId};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function savePhotoChunk(p) {
+  try {
+    if (!p.uploadId) return {status:"error", message:"uploadId required"};
+    if (p.idx === undefined) return {status:"error", message:"idx required"};
+    if (p.chunk === undefined) return {status:"error", message:"chunk required"};
+    CacheService.getScriptCache().put("photo_" + p.uploadId + "_" + p.idx, p.chunk, 600);
+    return {status:"ok", idx:p.idx};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function finishPhotoChunkUpload(p) {
+  try {
+    var uploadId = p.uploadId || "";
+    var count = parseInt(p.count || "0", 10);
+    if (!uploadId) return {status:"error", message:"uploadId required"};
+    if (!count || count &lt; 1) return {status:"error", message:"count required"};
+    var cache = CacheService.getScriptCache();
+    var keys = [];
+    for (var i = 0; i &lt; count; i++) keys.push("photo_" + uploadId + "_" + i);
+    var got = cache.getAll(keys);
+    var parts = [];
+    for (var j = 0; j &lt; count; j++) {
+      var part = got["photo_" + uploadId + "_" + j];
+      if (part === null || part === undefined) return {status:"error", message:"Missing photo chunk " + (j + 1) + "/" + count};
+      parts.push(part);
+    }
+    return savePhotoData(p.regNo, parts.join(""), p.mimeType || "image/jpeg");
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function updateStudentPhotoUrl(regNo, photoUrl) {
+  var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+  var row = findRowByKey(sh, 3, regNo) || findRowByKey(sh, 4, regNo);
+  if (row) {
+    sh.getRange(row, 27).setValue(photoUrl);
+    SpreadsheetApp.flush();
+  }
+}
+
+function getPhotoUrlByRegNo(regNo) {
+  try {
+    regNo = (regNo || "").toString().trim();
+    if (!regNo) return {status:"error", message:"regNo required"};
+    var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+    var row = findRowByKey(sh, 3, regNo) || findRowByKey(sh, 4, regNo);
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var files = folder.getFilesByName(cleanRegFileName(regNo) + ".jpg");
+    if (files.hasNext()) {
+      var file = files.next();
+      var photoUrl = publicDriveUrl(file.getId());
+      updateStudentPhotoUrl(regNo, photoUrl);
+      return {status:"ok", photoUrl:photoUrl};
+    }
+    if (row) {
+      var savedUrl = sh.getRange(row, 33).getValue();
+      if (savedUrl) return {status:"ok", photoUrl:savedUrl};
+    }
+    return {status:"notfound", photoUrl:""};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+</pre>
+<button onclick="navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent);alert('फक्त Apps Script Code copy झाला आहे. Code.gs मध्ये paste करताना </pre>, <button>, <div> असे HTML tags paste करू नका.')" style="margin-top:8px;background:#d4902a;border:none;border-radius:5px;padding:7px 16px;color:#1a2a4a;font-weight:700;cursor:pointer">Only Code.gs Copy</button>
+<div style="margin-top:8px;padding:8px 10px;background:#4a1a1a;border:1px solid #b85a5a;border-radius:6px;color:#ffd0d0;font-size:11px;line-height:1.6">
+  <b>महत्त्वाचे:</b> Code.gs मध्ये फक्त वरच्या dark-blue box मधील JavaScript code paste करा. <b>&lt;/pre&gt;, &lt;button&gt;, &lt;div&gt;, Manifest Copy</b> हा HTML भाग Code.gs मध्ये paste करू नका.
+</div>
+<div style="margin-top:12px;padding:10px;background:#281a0a;border:1px solid #d4902a;border-radius:6px;color:#ffe0a0;font-size:11px;line-height:1.7">
+  <b>DriveApp Permission Fix:</b> Apps Script मध्ये Project Settings → Show "appsscript.json" manifest file सुरू करा आणि खालील scopes manifest मध्ये ठेवा. नंतर Save → Deploy New Version → एकदा Run/Test करून authorization Allow करा.
+</div>
+<pre id="appsScriptManifest" style="background:#0d1b35;padding:12px;border-radius:6px;margin-top:8px;overflow-x:auto;font-size:11px;color:#ffd18a;white-space:pre-wrap">{
+  "timeZone": "Asia/Kolkata",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets.currentonly",
+    "https://www.googleapis.com/auth/drive"
+  ]
+}</pre>
+<button onclick="navigator.clipboard.writeText(document.getElementById('appsScriptManifest').textContent)" style="margin-top:8px;background:#1a4a7a;border:none;border-radius:5px;padding:7px 16px;color:#fff;font-weight:700;cursor:pointer">Manifest Copy</button>
+</details>
 
 
 
@@ -1676,6 +2161,7 @@ body:not(.auth-locked) .login-screen{display:none}
   <div class="snm" id="sgsMsg"></div>
   <button class="snc" onclick="closeSaveNotif()">ठीक आहे</button>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
