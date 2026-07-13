@@ -1,6 +1,5 @@
-
 // URL persistence
-var DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbzq6YnbeoX0TvwlZrCegnos8nvlIriZvpyvQX-_lrhRtgvFH_VoQ4tkFCUV-Nr6Jp5jJQ/exec';
+var DEFAULT_SHEETS_URL = 'https://script.google.com/macros/s/AKfycbyc_FB6OR_7FOLmUJnldpdU-nBfq8Wk0g-ZP-cvMDZQyDfb_SQx9ysGmKEV95sOF8s6/exec';
 
 // =====================================================
 // 🔐 LOGIN + ROLE PERMISSIONS
@@ -36,22 +35,28 @@ function defaultPageForRole(role) {
 function syncRemoteUsers(onDone) {
   var url = getUrl();
   if (!url) { if (onDone) onDone(); return; }
-  var cb = 'usersCb_' + Date.now();
-  window[cb] = function(r) {
+  var cb = 'usersCb_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+  var done = false;
+  function finish() {
+    if (done) return;
+    done = true;
     delete window[cb];
+    if (onDone) onDone();
+  }
+  window[cb] = function(r) {
     if (r && r.status === 'ok' && r.data) {
       r.data.forEach(function(u) {
         AUTH_USERS[u.username] = { password: u.password, role: u.role, label: u.label, assignedClass: u.assignedClass || '' };
       });
     }
-    if (onDone) onDone();
+    finish();
   };
   var s = document.createElement('script');
   s.src = url + '?action=getUsers&callback=' + cb + '&t=' + Date.now();
-  s.onerror = function() { delete window[cb]; if (onDone) onDone(); };
+  s.onerror = finish;
   document.head.appendChild(s);
+  setTimeout(finish, 8000); // Apps Script Cold-start खूप वेळ घेतल्यास वाट न पाहता पुढे जा
 }
-
 function applyTeacherClassInfo() {
   if (!currentUser || currentUser.role !== 'teacher') return;
   var raw = (currentUser.assignedClass || '').toString();
@@ -83,6 +88,29 @@ function initAuth() {
   }
 }
 
+// ===== Login आधी शाळेशी Connect करण्याचे बटण — Users ताजे आणून ठेवते, म्हणजे प्रत्यक्ष Login तात्काळ होतो (V19.27) =====
+function preConnectLogin() {
+  var btn = document.getElementById('preConnectBtn');
+  var st = document.getElementById('preConnectStatus');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ शाळेशी जोडत आहे...';
+  if (st) { st.textContent = ''; st.style.color = ''; }
+  syncRemoteUsers(function() {
+    btn.disabled = false;
+    btn.textContent = '✅ जोडले गेले — आता Login करा';
+    if (st) {
+      st.textContent = 'Username व Password टाकून Login करा — आता ते तात्काळ होईल.';
+      st.style.color = '#1a7a3a';
+    }
+    var u = document.getElementById('loginUsername');
+    if (u) u.focus();
+    setTimeout(function() {
+      if (btn) btn.textContent = '🔄 प्रथम शाळेशी जोडा (जलद व सुरक्षित Login साठी)';
+    }, 5000);
+  });
+}
+
 function attemptLogin(ev) {
   if (ev) ev.preventDefault();
   var uEl = document.getElementById('loginUsername');
@@ -90,21 +118,38 @@ function attemptLogin(ev) {
   var st = document.getElementById('loginStatus');
   var username = (uEl ? uEl.value : '').trim();
   var password = pEl ? pEl.value : '';
-  var user = AUTH_USERS[username];
-  if (user && user.password === password) {
-    return completeLogin(username, user, pEl, st);
+
+  // Super Master: Google Sheets पूर्णपणे बंद/अनुपलब्ध असतानाही शाळेला नेहमी प्रवेश मिळावा
+  // म्हणून hardcoded माहिती त्वरित (सिंक ची वाट न पाहता) तपासली जाते — फक्त हाच एक सुरक्षा अपवाद (V19.26)
+  var hardcoded = AUTH_USERS[username];
+  if (hardcoded && hardcoded.role === 'super' && hardcoded.password === password) {
+    return completeLogin(username, hardcoded, pEl, st);
   }
-  // ===== Users sheet अजून sync झाला नसेल तर एकदा पुन्हा प्रयत्न करा (V19.9) =====
-  if (st) { st.textContent = '⏳ पडताळणी होत आहे...'; st.className = 'login-status'; st.style.display = 'block'; }
-  syncRemoteUsers(function() {
-    var user2 = AUTH_USERS[username];
-    if (user2 && user2.password === password) {
-      completeLogin(username, user2, pEl, st);
-    } else if (st) {
-      st.textContent = 'Username किंवा Password चुकीचा आहे.';
-      st.className = 'login-status err';
-    }
-  });
+
+  // ===== इतर सर्व Users (Master/DEO/Certificate/Class Teacher):
+  // प्रत्येक Login वेळी थेट Google Sheets वरून ताजी माहिती आणूनच पडताळणी होते.
+  // यामुळे तुम्ही Sheet/User Management मध्ये Password बदलल्यास तो लगेच पुढच्याच Login पासून काम करतो — जुन्या/साठवलेल्या माहितीवर अवलंबून राहत नाही. (V19.26) =====
+  var attempts = [0, 1500, 3500]; // मिलिसेकंद विलंब — Apps Script Cold-start ला वेळ लागू शकतो
+  var tryIndex = 0;
+  if (st) { st.textContent = '⏳ शाळेच्या Sheet शी जोडत आहे, कृपया थोडा वेळ थांबा...'; st.className = 'login-status'; st.style.display = 'block'; }
+  function tryOnce() {
+    syncRemoteUsers(function() {
+      var user = AUTH_USERS[username];
+      if (user && user.password === password) {
+        completeLogin(username, user, pEl, st);
+        return;
+      }
+      tryIndex++;
+      if (tryIndex < attempts.length) {
+        if (st) st.textContent = '⏳ पुन्हा प्रयत्न करत आहे... (' + (tryIndex+1) + '/' + attempts.length + ')';
+        setTimeout(tryOnce, attempts[tryIndex]);
+      } else if (st) {
+        st.textContent = 'Username किंवा Password चुकीचा आहे.';
+        st.className = 'login-status err';
+      }
+    });
+  }
+  tryOnce();
   return false;
 }
 function completeLogin(username, user, pEl, st) {
@@ -2191,9 +2236,807 @@ function exportATPDF() {
     exportCertAsPDF('AT_' + reg + '_' + dt + '.pdf');
   }, 600);
 }
+</script>
 
+<!-- ===== APPS SCRIPT (expand to copy) ===== -->
+<details class="master-only" style="display:none !important;max-width:1200px;margin:16px auto;background:rgba(26,42,74,.9);border:1px solid rgba(212,144,42,.4);border-radius:10px;padding:16px;color:#c8d8f0;font-size:12px">
+<summary style="cursor:pointer;color:#e8b05a;font-weight:700;font-size:13px">⚙️ Google Apps Script Code — Click to Expand & Copy</summary>
+<button onclick="var p=document.getElementById('appsScriptCode'),b=this;p.style.display=p.style.display==='none'?'block':'none';b.textContent=p.style.display==='none'?'🔽 Apps Script Code दाखवा':'🔼 Apps Script Code लपवा';" style="background:#1a3a6a;color:#a0d0ff;border:none;border-radius:5px;padding:6px 14px;cursor:pointer;font-size:12px;margin:8px 0 4px;display:block">🔽 Apps Script Code दाखवा</button>
+<pre id="appsScriptCode" style="background:#0d1b35;padding:14px;border-radius:6px;margin-top:4px;overflow-x:auto;font-size:11px;color:#a0d0ff;white-space:pre-wrap;display:none">
+var MAIN_HEADERS = [
+  "Timestamp","Acad Year","Reg No","Student ID","Book No","Aadhar",
+  "Class","Division","PEN","Roll No","Full Name",
+  "Mother Name","Gender","Religion","Caste","Sub-caste","DOB","DOB Words",
+  "Nationality","Mother Tongue","Birth Place",
+  "Previous School","Admission Date","Admission Class",
+  "Contact","Address","Photo URL"
+];
+var LC_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name","Gender",
+  "DOB","DOB Words","Class","Religion","Caste","Nationality","Mother Tongue",
+  "Admission Date","Admission Class","Leave Date","Leave Class","Class Start Date",
+  "LC No","LC Date","Conduct","Progress","Stxt75","Stxt76","Remarks",
+  "Medium","Next School","LC Count","Fee Status","Stxt60","Stxt61",
+  "Stxt62","Stxt63","Stxt67","Stxt68","Stxt69","Stxt70","Nationality Type"
+];
+var BF_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name",
+  "DOB","DOB Words","Class","Tukdi","Religion","Caste","Nationality",
+  "Acad Year","BF Date","Purpose","Admission Date","Admission Class",
+  "Remarks","Address","Contact"
+];
+var AT_HEADERS = [
+  "Timestamp","Serial No","Student ID","Full Name","Gender",
+  "DOB","Class","Tukdi","Acad Year","AT Date","Purpose",
+  "Total Days","Present Days","Percentage","From Date","To Date","Remarks"
+];
+var PHOTO_FOLDER_ID = "1urIudSUS7U0ClMTjvp__uZ0ZgTQ7GrbU";
 
+function getOrCreateSheet(name, headers) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(name);
+  if (!sh) {
+    sh = ss.insertSheet(name);
+    sh.appendRow(headers);
+  } else if (sh.getLastRow() === 0) {
+    sh.appendRow(headers);
+  } else {
+    var existing = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), headers.length)).getValues()[0];
+    for (var i = 0; i &lt; headers.length; i++) {
+      if (!existing[i]) sh.getRange(1, i + 1).setValue(headers[i]);
+    }
+  }
+  return sh;
+}
 
+function findRowByKey(sh, col, key) {
+  key = (key || "").toString().trim().toLowerCase();
+  if (!key || !sh || sh.getLastRow() &lt; 2) return 0;
+  var vals = sh.getRange(2, col, sh.getLastRow()-1, 1).getValues();
+  for (var i=0; i&lt;vals.length; i++) {
+    if ((vals[i][0] || "").toString().trim().toLowerCase() === key) return i + 2;
+  }
+  return 0;
+}
+
+function writeRow(sh, rowNum, row) {
+  if (rowNum) {
+    sh.getRange(rowNum, 1, 1, row.length).setValues([row]);
+    return {rowIndex: rowNum, mode: "updated"};
+  }
+  sh.appendRow(row);
+  return {rowIndex: sh.getLastRow(), mode: "created"};
+}
+
+function doPost(e) {
+  var p = e.parameter || {};
+  if (p.action === "uploadPhoto") {
+    var photoResult = handlePhotoUpload(p);
+    return ContentService.createTextOutput(JSON.stringify(photoResult))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+  return handleAction(p, ""); // "" = JSON response — serial परत frontend ला येतो
+}
+
+function doGet(e) {
+  var p = e.parameter || {};
+  var cb = p.callback || "";
+  if (!p.action &amp;&amp; (p.regNo || p.studentId || p.firstName)) p.action = "upsert";
+  if (p.action === "verify") {
+    return doVerifyPage(p);
+  }
+  if (p.action === "ping") {
+    try {
+      var ssName = SpreadsheetApp.getActiveSpreadsheet().getName();
+      return wrap(cb, {status:"ok", message:"Connected! Sheet: " + ssName});
+    } catch(ex) {
+      return wrap(cb, {status:"error", message:"Script is deployed but NOT BOUND to a Sheet! Re-deploy from inside the Sheet."});
+    }
+  }
+  if (p.action === "getAll") {
+    return doGetAllAction(p, cb);
+  }
+  if (p.action === "testPhotoFolder") {
+    return wrap(cb, testPhotoFolderAccess());
+  }
+  if (p.action === "photoChunkStart") {
+    return wrap(cb, startPhotoChunkUpload(p));
+  }
+  if (p.action === "photoChunk") {
+    return wrap(cb, savePhotoChunk(p));
+  }
+  if (p.action === "photoChunkFinish") {
+    return wrap(cb, finishPhotoChunkUpload(p));
+  }
+  if (p.action === "getPhotoUrl" &amp;&amp; p.regNo) {
+    return wrap(cb, getPhotoUrlByRegNo(p.regNo));
+  }
+  if (p.action === "search" &amp;&amp; p.q) {
+    return doSearchAction(p, cb);
+  }
+  if (p.action === "getDashboardStats") {
+    return doGetDashboardStats(p, cb);
+  }
+  if (p.action === "getStudentHistory") {
+    return doGetStudentHistory(p, cb);
+  }
+  if (p.action === "getAllCertificates") {
+    return doGetAllCertificates(p, cb);
+  }
+  if (p.action === "getUsers") {
+    return doGetUsers(p, cb);
+  }
+  if (p.action === "saveUser") {
+    return doSaveUser(p, cb);
+  }
+  if (p.action === "deleteUser") {
+    return doDeleteUser(p, cb);
+  }
+  if (p.action === "changePassword") {
+    return doChangePassword(p, cb);
+  }
+  if (p.action === "getAnalyticsData") {
+    return doGetAnalyticsData(p, cb);
+  }
+  if (p.action === "verify") {
+    return doVerifyPage(p);
+  }
+  var a = p.action || "";
+  if (a.indexOf("save") === 0 || a.indexOf("upsert") === 0 ||
+      a.indexOf("update") === 0) {
+    return handleAction(p, cb);
+  }
+  return wrap(cb, {status:"ok", message:"Running!"});
+}
+
+function getNextSerial(sh) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return 1;
+  var vals = sh.getRange(2, 2, lastRow - 1, 1).getValues();
+  var max = 0;
+  for (var i = 0; i < vals.length; i++) {
+    var n = parseInt(vals[i][0], 10);
+    if (!isNaN(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
+function handleAction(d, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) return wrap(cb, {status:"error", message:"Script NOT bound to a Sheet. Open Sheet → Extensions → Apps Script."});
+    var action = d.action || "upsert";
+    var result = {rowIndex:0, mode:"created"};
+
+    if (action === "save" || action === "update" || action === "upsert") {
+      var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+      var row = [new Date().toLocaleString("en-IN"),
+        d.acYear,d.regNo,d.studentId,d.bookNo,d.aadhar,d.iyatta,d.tukdi,
+        d.pen,d.rollNo,d.firstName,d.motherName,d.gender,
+        d.religion,d.caste,d.subcaste,d.dob,d.dobWords,d.nationality,d.motherTongue,
+        d.birthVillage,d.prevSchool,
+        d.admissionDate,d.admissionClass,d.contact,d.address,d.photoUrl];
+      var rowToWrite = 0;
+      if (action === "update" &amp;&amp; d.rowIndex) rowToWrite = parseInt(d.rowIndex,10);
+      if (action === "upsert") rowToWrite = findRowByKey(sh, 3, d.regNo) || findRowByKey(sh, 4, d.studentId);
+      result = writeRow(sh, rowToWrite, row);
+    } else if (action === "save_lc" || action === "update_lc" || action === "upsert_lc") {
+      var sh = getOrCreateSheet("LC", LC_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक LC ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var lcSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        lcSerial,d.stxt1,d.firstName,d.gender,d.dob,d.dobWords,
+        d.iyatta,d.religion,d.caste,d.nationality,d.motherTongue,
+        d.admissionDate,d.admissionClass,d.lcLeaveDate,d.lcLeaveClass,d.classStartDate,
+        d.lcNo,d.lcDate,d.conduct,d.progress,d.stxt75,d.stxt76,d.remarks,
+        d.medium,d.nextSchool,d.lcCount,d.feeStatus,
+        d.stxt60,d.stxt61,d.stxt62,d.stxt63,d.stxt67,d.stxt68,d.stxt69,d.stxt70,d.nationalityType];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = lcSerial;
+    } else if (action === "save_bf" || action === "upsert_bf") {
+      var sh = getOrCreateSheet("Bonafide", BF_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक Bonafide ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var bfSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        bfSerial,d.stxt1,d.firstName,d.dob,d.dobWords,
+        d.iyatta,d.tukdi,d.religion,d.caste,d.nationality,
+        d.acYear,d.bfDate,d.purpose,d.admissionDate,d.admissionClass,
+        d.remarks,d.address,d.contact];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = bfSerial;
+    } else if (action === "save_at" || action === "upsert_at") {
+      var sh = getOrCreateSheet("Attendance", AT_HEADERS);
+      // ✅ सदैव नवीन row — प्रत्येक Attendance certificate ला स्वतंत्र serial नंबर
+      var rowToWrite = 0;
+      var atSerial = getNextSerial(sh);
+      var row = [new Date().toLocaleString("en-IN"),
+        atSerial,d.stxt1,d.firstName,d.gender,d.dob,
+        d.iyatta,d.tukdi,d.acYear,d.atDate,d.purpose,
+        d.totalDays,d.presentDays,d.pct,d.fromDate,d.toDate,d.remarks];
+      result = writeRow(sh, rowToWrite, row);
+      result.serial = atSerial;
+    } else {
+      return wrap(cb, {status:"error", message:"Unknown action: "+action});
+    }
+    logAudit(d.auditUser, d.auditRole, action, result.serial || d.regNo || d.stxt1 || "");
+    return wrap(cb, {status:"ok", rowIndex:result.rowIndex, action:action, mode:result.mode, serial:result.serial||""});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== AUDIT LOG (V19.8) — कोणत्या User ने कधी काय Save केले =====
+function logAudit(user, role, action, refInfo) {
+  try {
+    var sh = getOrCreateSheet("Log", ["Timestamp","User","Role","Action","Reference"]);
+    sh.appendRow([new Date().toLocaleString("en-IN"), user || "unknown", role || "", action || "", refInfo || ""]);
+  } catch(e) {
+    // Logging failure should never block the main save operation
+  }
+}
+
+// ===== DASHBOARD LIVE STATS (V19.8) =====
+function doGetDashboardStats(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var todayStr = fmt(new Date());
+    var now = new Date();
+    var monthKey = now.getFullYear() + "-" + ("0"+(now.getMonth()+1)).slice(-2);
+
+    var stSh = ss.getSheetByName("Students");
+    var totalStudents = 0;
+    var classCounts = {};
+    if (stSh &amp;&amp; stSh.getLastRow() &gt; 1) {
+      var stRows = stSh.getRange(2, 1, stSh.getLastRow()-1, 11).getValues();
+      for (var i=0;i&lt;stRows.length;i++) {
+        if (!stRows[i][2] &amp;&amp; !stRows[i][10]) continue;
+        totalStudents++;
+        var cls = (stRows[i][6]||"").toString().trim();
+        if (cls) classCounts[cls] = (classCounts[cls]||0) + 1;
+      }
+    }
+
+    function countTodayAndMonth(sheetName) {
+      var sh = ss.getSheetByName(sheetName);
+      var today = 0, month = 0;
+      if (sh &amp;&amp; sh.getLastRow() &gt; 1) {
+        var rows = sh.getRange(2, 1, sh.getLastRow()-1, 1).getValues();
+        for (var i=0;i&lt;rows.length;i++) {
+          var ts = rows[i][0];
+          if (!ts) continue;
+          var d = new Date(ts);
+          if (isNaN(d.getTime())) continue;
+          var dKey = fmt(d);
+          var mKey = d.getFullYear() + "-" + ("0"+(d.getMonth()+1)).slice(-2);
+          if (dKey === todayStr) today++;
+          if (mKey === monthKey) month++;
+        }
+      }
+      return {today:today, month:month};
+    }
+
+    var lcCounts = countTodayAndMonth("LC");
+    var bfCounts = countTodayAndMonth("Bonafide");
+    var atCounts = countTodayAndMonth("Attendance");
+    var monthCerts = lcCounts.month + bfCounts.month + atCounts.month;
+
+    return wrap(cb, {
+      status:"ok",
+      totalStudents: totalStudents,
+      todayLC: lcCounts.today,
+      todayBF: bfCounts.today,
+      monthCerts: monthCerts,
+      classCounts: classCounts
+    });
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== LC/BF/AT HISTORY FOR ONE STUDENT (V19.8) =====
+function doGetStudentHistory(p, cb) {
+  try {
+    var regNo = (p.regNo || "").toString().trim().toLowerCase();
+    if (!regNo) return wrap(cb, {status:"error", message:"regNo required"});
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var out = [];
+
+    function scan(sheetName, type, detailFn) {
+      var sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() &lt; 2) return;
+      var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if ((r[2]||"").toString().trim().toLowerCase() !== regNo) continue;
+        out.push({
+          type: type,
+          serial: r[1],
+          date: fmt(r[0]),
+          detail: detailFn(r)
+        });
+      }
+    }
+    scan("LC", "LC", function(r){ return "LC No: " + (r[17]||"—"); });
+    scan("Bonafide", "BF", function(r){ return "Purpose: " + (r[13]||"—"); });
+    scan("Attendance", "AT", function(r){ return "Purpose: " + (r[10]||"—"); });
+
+    out.sort(function(a,b){ return (a.date &lt; b.date) ? 1 : -1; });
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// ===== BULK EXPORT — ALL LC/BF/AT (V19.8) =====
+function doGetAllCertificates(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var out = [];
+
+    function scan(sheetName, type, detailFn) {
+      var sh = ss.getSheetByName(sheetName);
+      if (!sh || sh.getLastRow() &lt; 2) return;
+      var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if (!r[2]) continue;
+        out.push({
+          type: type,
+          serial: r[1],
+          date: fmt(r[0]),
+          regNo: r[2],
+          firstName: r[3],
+          detail: detailFn(r)
+        });
+      }
+    }
+    scan("LC", "LC", function(r){ return "LC No: " + (r[17]||"—"); });
+    scan("Bonafide", "BF", function(r){ return "Purpose: " + (r[13]||"—"); });
+    scan("Attendance", "AT", function(r){ return "Purpose: " + (r[10]||"—"); });
+
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// =====================================================
+// 👥 USER MANAGEMENT PRO (V19.9)
+// =====================================================
+var USER_HEADERS = ["Username","Password","Role","Label"];
+var DEFAULT_USERS_SEED = [
+  ["user_1","Pass@1234","master","Master User"],
+  ["user_2","Pass@1234","deo","DEO User"],
+  ["user_3","Pass@1234","cert","Certificate User"]
+];
+
+function getUsersSheet() {
+  var sh = getOrCreateSheet("Users", USER_HEADERS);
+  if (sh.getLastRow() &lt; 2) {
+    for (var i=0;i&lt;DEFAULT_USERS_SEED.length;i++) sh.appendRow(DEFAULT_USERS_SEED[i]);
+  }
+  return sh;
+}
+
+function doGetUsers(p, cb) {
+  try {
+    var sh = getUsersSheet();
+    var rows = sh.getRange(2, 1, sh.getLastRow()-1, 4).getValues();
+    var out = [];
+    for (var i=0;i&lt;rows.length;i++) {
+      if (!rows[i][0]) continue;
+      out.push({ rowIndex:i+2, username:rows[i][0], password:rows[i][1], role:rows[i][2], label:rows[i][3] });
+    }
+    return wrap(cb, {status:"ok", data: out});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doSaveUser(p, cb) {
+  try {
+    // फक्त Super Master role असलेल्या logged-in user कडूनच call यायला हवा — frontend कडून व्हॅलिडेशन,
+    // तसेच backend मध्येही requesterRole तपासतो
+    if (p.requesterRole !== "super") {
+      return wrap(cb, {status:"error", message:"User Management अधिकार फक्त Super Master User ला आहे."});
+    }
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    if (!username) return wrap(cb, {status:"error", message:"Username आवश्यक आहे."});
+    var rowToWrite = findRowByKey(sh, 1, username);
+    var row = [username, p.password||"", p.role||"cert", p.label||username];
+    if (rowToWrite) {
+      sh.getRange(rowToWrite, 1, 1, 4).setValues([row]);
+    } else {
+      sh.appendRow(row);
+    }
+    logAudit(p.requesterUser, p.requesterRole, "saveUser", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doDeleteUser(p, cb) {
+  try {
+    if (p.requesterRole !== "super") {
+      return wrap(cb, {status:"error", message:"User Management अधिकार फक्त Super Master User ला आहे."});
+    }
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    var rowToWrite = findRowByKey(sh, 1, username);
+    if (!rowToWrite) return wrap(cb, {status:"error", message:"User सापडला नाही."});
+    sh.deleteRow(rowToWrite);
+    logAudit(p.requesterUser, p.requesterRole, "deleteUser", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doChangePassword(p, cb) {
+  try {
+    var sh = getUsersSheet();
+    var username = (p.username||"").toString().trim();
+    var rowToWrite = findRowByKey(sh, 1, username);
+    if (!rowToWrite) return wrap(cb, {status:"error", message:"User सापडला नाही."});
+    var current = sh.getRange(rowToWrite, 2).getValue();
+    if ((current||"").toString() !== (p.oldPassword||"").toString()) {
+      return wrap(cb, {status:"error", message:"जुना Password चुकीचा आहे."});
+    }
+    sh.getRange(rowToWrite, 2).setValue(p.newPassword||"");
+    logAudit(username, p.requesterRole, "changePassword", username);
+    return wrap(cb, {status:"ok"});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+// =====================================================
+// ✅ CERTIFICATE VERIFY PAGE — QR कोड scan केल्यावर उघडणारे पान (V19.9)
+// =====================================================
+function doVerifyPage(p) {
+  var type = (p.type||"").toString().toUpperCase();
+  var serial = (p.serial||"").toString().trim();
+  var sheetMap = { LC:"LC", BF:"Bonafide", AT:"Attendance" };
+  var sheetName = sheetMap[type];
+  var found = null;
+  try {
+    if (sheetName &amp;&amp; serial) {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sh = ss.getSheetByName(sheetName);
+      if (sh &amp;&amp; sh.getLastRow() &gt; 1) {
+        var rows = sh.getRange(2, 1, sh.getLastRow()-1, sh.getLastColumn()).getValues();
+        for (var i=0;i&lt;rows.length;i++) {
+          if ((rows[i][1]||"").toString() === serial) {
+            found = { serial:rows[i][1], regNo:rows[i][2], firstName:rows[i][3], date:fmt(rows[i][0]) };
+            break;
+          }
+        }
+      }
+    }
+  } catch(e) {}
+
+  var html;
+  if (found) {
+    html = "&lt;div style='font-family:sans-serif;max-width:420px;margin:40px auto;padding:24px;border:2px solid #1a7a3a;border-radius:10px;text-align:center;background:#f4fff4'&gt;"
+      + "&lt;div style='font-size:40px'&gt;✅&lt;/div&gt;"
+      + "&lt;h2 style='color:#1a7a3a'&gt;Certificate Verified&lt;/h2&gt;"
+      + "&lt;p&gt;&lt;b&gt;Type:&lt;/b&gt; " + type + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Serial No:&lt;/b&gt; " + found.serial + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Reg No:&lt;/b&gt; " + found.regNo + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Name:&lt;/b&gt; " + found.firstName + "&lt;/p&gt;"
+      + "&lt;p&gt;&lt;b&gt;Date:&lt;/b&gt; " + found.date + "&lt;/p&gt;"
+      + "&lt;p style='font-size:12px;color:#666;margin-top:16px'&gt;Shri Govindram Seksaria High School, Pachora&lt;/p&gt;"
+      + "&lt;/div&gt;";
+  } else {
+    html = "&lt;div style='font-family:sans-serif;max-width:420px;margin:40px auto;padding:24px;border:2px solid #7a1a1a;border-radius:10px;text-align:center;background:#fff4f4'&gt;"
+      + "&lt;div style='font-size:40px'&gt;❌&lt;/div&gt;"
+      + "&lt;h2 style='color:#7a1a1a'&gt;Not Verified&lt;/h2&gt;"
+      + "&lt;p&gt;सदर Certificate आमच्या records मध्ये आढळले नाही.&lt;/p&gt;"
+      + "&lt;/div&gt;";
+  }
+  return HtmlService.createHtmlOutput(html);
+}
+
+// =====================================================
+// 📊 ANALYTICS &amp; REPORTING (V19.9)
+// =====================================================
+function classifyLcReason(remarks) {
+  var t = (remarks||"").toString().toLowerCase();
+  if (t.indexOf("बदली") !== -1 || t.indexOf("transfer") !== -1) return "Transfer";
+  if (t.indexOf("प्रगती") !== -1 || t.indexOf("progress") !== -1) return "Progress";
+  return "Other";
+}
+
+function doGetAnalyticsData(p, cb) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var admissionsByYear = {};
+    var genderCounts = {};
+    var religionCounts = {};
+    var casteCounts = {};
+    var lcReasonCounts = { Transfer:0, Progress:0, Other:0 };
+
+    var stSh = ss.getSheetByName("Students");
+    if (stSh &amp;&amp; stSh.getLastRow() &gt; 1) {
+      var rows = stSh.getRange(2, 1, stSh.getLastRow()-1, 26).getValues();
+      for (var i=0;i&lt;rows.length;i++) {
+        var r = rows[i];
+        if (!r[2] &amp;&amp; !r[10]) continue;
+        var admDate = r[22];
+        if (admDate) {
+          var yr = (admDate instanceof Date) ? admDate.getFullYear() : new Date(admDate).getFullYear();
+          if (!isNaN(yr)) admissionsByYear[yr] = (admissionsByYear[yr]||0) + 1;
+        }
+        var gender = (r[12]||"Unknown").toString();
+        genderCounts[gender] = (genderCounts[gender]||0) + 1;
+        var religion = (r[13]||"Unknown").toString().trim();
+        if (religion) religionCounts[religion] = (religionCounts[religion]||0) + 1;
+        var caste = (r[14]||"Unknown").toString().trim();
+        if (caste) casteCounts[caste] = (casteCounts[caste]||0) + 1;
+      }
+    }
+
+    var lcSh = ss.getSheetByName("LC");
+    if (lcSh &amp;&amp; lcSh.getLastRow() &gt; 1) {
+      var lcRows = lcSh.getRange(2, 1, lcSh.getLastRow()-1, 24).getValues();
+      for (var j=0;j&lt;lcRows.length;j++) {
+        if (!lcRows[j][2]) continue;
+        var reason = classifyLcReason(lcRows[j][23]);
+        lcReasonCounts[reason] = (lcReasonCounts[reason]||0) + 1;
+      }
+    }
+
+    return wrap(cb, {
+      status:"ok",
+      admissionsByYear: admissionsByYear,
+      genderCounts: genderCounts,
+      religionCounts: religionCounts,
+      casteCounts: casteCounts,
+      lcReasonCounts: lcReasonCounts
+    });
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function wrap(cb, obj) {
+  var json = JSON.stringify(obj);
+  if (cb) {
+    return ContentService.createTextOutput(cb + "(" + json + ");")
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(json)
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGetAllAction(p, cb) {
+  try {
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Students");
+    if (!sh || sh.getLastRow() &lt; 2) return wrap(cb, {status:"ok", data:[]});
+    var rows = sh.getRange(2, 1, sh.getLastRow()-1, 27).getValues();
+    var all = [];
+    for (var i = 0; i &lt; rows.length; i++) {
+      var r = rows[i];
+      if (!r[10] &amp;&amp; !r[2]) continue; // रिकामी row वगळा
+      all.push({
+        _rowIndex: i + 2,
+        acYear:r[1], regNo:r[2], studentId:r[3], bookNo:r[4], aadhar:r[5],
+        iyatta:r[6], tukdi:r[7], pen:r[8], rollNo:r[9],
+        firstName:r[10], motherName:r[11], gender:r[12],
+        religion:r[13], caste:r[14], subcaste:r[15], dob:fmt(r[16]), dobWords:r[17],
+        nationality:r[18], motherTongue:r[19], birthVillage:r[20],
+        prevSchool:r[21], admissionDate:fmt(r[22]), admissionClass:r[23],
+        contact:r[24], address:r[25], photoUrl:r[26]
+      });
+    }
+    return wrap(cb, {status:"ok", data:all});
+  } catch(err) {
+    return wrap(cb, {status:"error", message:err.toString()});
+  }
+}
+
+function doSearchAction(p, cb) {
+  try {
+    var q = (p.q || "").toString().trim().toLowerCase();
+    var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Students");
+    if (!sh || sh.getLastRow() &lt; 2) return wrap(cb,{status:"notfound"});
+    var rows = sh.getRange(2,1,sh.getLastRow()-1,27).getValues();
+    for (var i=0;i&lt;rows.length;i++) {
+      var r=rows[i];
+      var cands=[
+        (r[2]||"").toString().trim().toLowerCase(),
+        (r[3]||"").toString().trim().toLowerCase(),
+        (r[5]||"").toString().trim().toLowerCase(),
+        (r[10]||"").toString().trim().toLowerCase()
+      ];
+      if (cands.indexOf(q)!==-1) {
+        return wrap(cb,{status:"found",rowIndex:i+2,data:{
+          acYear:r[1],regNo:r[2],studentId:r[3],bookNo:r[4],aadhar:r[5],
+          iyatta:r[6],tukdi:r[7],pen:r[8],rollNo:r[9],
+          firstName:r[10],motherName:r[11],gender:r[12],
+          religion:r[13],caste:r[14],subcaste:r[15],dob:fmt(r[16]),dobWords:r[17],nationality:r[18],
+          motherTongue:r[19],birthVillage:r[20],
+          prevSchool:r[21],admissionDate:fmt(r[22]),admissionClass:r[23],
+          contact:r[24],address:r[25],photoUrl:r[26]
+        }});
+      }
+    }
+    return wrap(cb,{status:"notfound"});
+  } catch(err) {
+    return wrap(cb,{status:"error",message:err.toString()});
+  }
+}
+function fmt(v){
+  if(!v) return "";
+  if(v instanceof Date){
+    return v.getFullYear()+"-"+("0"+(v.getMonth()+1)).slice(-2)+"-"+("0"+v.getDate()).slice(-2);
+  }
+  return v.toString();
+}
+
+function cleanRegFileName(regNo) {
+  var text = (regNo || "student").toString().trim();
+  var bad = '\\/:*?"&lt;&gt;|#%&amp;{}$!\'@+=~';
+  var out = "";
+  for (var i = 0; i &lt; text.length; i++) {
+    var ch = text.charAt(i);
+    out += bad.indexOf(ch) &gt;= 0 ? "_" : ch;
+  }
+  return out || "student";
+}
+
+function publicDriveUrl(fileId) {
+  return "https://drive.google.com/thumbnail?id=" + fileId + "&amp;sz=w1000";
+}
+
+function testPhotoFolderAccess() {
+  try {
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var blob = Utilities.newBlob("ok", "text/plain", "_sgs_upload_test.txt");
+    var file = folder.createFile(blob);
+    file.setTrashed(true);
+    return {status:"ok", folderName:folder.getName(), folderId:PHOTO_FOLDER_ID};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function savePhotoData(regNo, photoData, mimeType) {
+  try {
+    regNo = (regNo || "").toString().trim();
+    if (!regNo) return {status:"error", message:"regNo required"};
+    if (!photoData) return {status:"error", message:"photoData required"};
+
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var fileName = cleanRegFileName(regNo) + ".jpg";
+    var existing = folder.getFilesByName(fileName);
+    while (existing.hasNext()) {
+      existing.next().setTrashed(true);
+    }
+    var bytes = Utilities.base64Decode(photoData);
+    if (bytes.length &gt; 10240) return {status:"error", message:"Photo size is " + bytes.length + " bytes. Please compress below 10 KB."};
+    var blob = Utilities.newBlob(bytes, mimeType || "image/jpeg", fileName);
+    var file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var photoUrl = publicDriveUrl(file.getId());
+    updateStudentPhotoUrl(regNo, photoUrl);
+    return {status:"ok", regNo:regNo, photoUrl:photoUrl, fileId:file.getId()};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function handlePhotoUpload(p) {
+  return savePhotoData(p.regNo, p.photoData, p.mimeType);
+}
+
+function startPhotoChunkUpload(p) {
+  try {
+    if (!p.uploadId) return {status:"error", message:"uploadId required"};
+    var cache = CacheService.getScriptCache();
+    cache.put("photo_" + p.uploadId + "_meta", JSON.stringify({
+      regNo:p.regNo || "",
+      mimeType:p.mimeType || "image/jpeg",
+      count:parseInt(p.count || "0", 10)
+    }), 600);
+    return {status:"ok", uploadId:p.uploadId};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function savePhotoChunk(p) {
+  try {
+    if (!p.uploadId) return {status:"error", message:"uploadId required"};
+    if (p.idx === undefined) return {status:"error", message:"idx required"};
+    if (p.chunk === undefined) return {status:"error", message:"chunk required"};
+    CacheService.getScriptCache().put("photo_" + p.uploadId + "_" + p.idx, p.chunk, 600);
+    return {status:"ok", idx:p.idx};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function finishPhotoChunkUpload(p) {
+  try {
+    var uploadId = p.uploadId || "";
+    var count = parseInt(p.count || "0", 10);
+    if (!uploadId) return {status:"error", message:"uploadId required"};
+    if (!count || count &lt; 1) return {status:"error", message:"count required"};
+    var cache = CacheService.getScriptCache();
+    var keys = [];
+    for (var i = 0; i &lt; count; i++) keys.push("photo_" + uploadId + "_" + i);
+    var got = cache.getAll(keys);
+    var parts = [];
+    for (var j = 0; j &lt; count; j++) {
+      var part = got["photo_" + uploadId + "_" + j];
+      if (part === null || part === undefined) return {status:"error", message:"Missing photo chunk " + (j + 1) + "/" + count};
+      parts.push(part);
+    }
+    return savePhotoData(p.regNo, parts.join(""), p.mimeType || "image/jpeg");
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+
+function updateStudentPhotoUrl(regNo, photoUrl) {
+  var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+  var row = findRowByKey(sh, 3, regNo) || findRowByKey(sh, 4, regNo);
+  if (row) {
+    sh.getRange(row, 27).setValue(photoUrl);
+    SpreadsheetApp.flush();
+  }
+}
+
+function getPhotoUrlByRegNo(regNo) {
+  try {
+    regNo = (regNo || "").toString().trim();
+    if (!regNo) return {status:"error", message:"regNo required"};
+    var sh = getOrCreateSheet("Students", MAIN_HEADERS);
+    var row = findRowByKey(sh, 3, regNo) || findRowByKey(sh, 4, regNo);
+    var folder = DriveApp.getFolderById(PHOTO_FOLDER_ID);
+    var files = folder.getFilesByName(cleanRegFileName(regNo) + ".jpg");
+    if (files.hasNext()) {
+      var file = files.next();
+      var photoUrl = publicDriveUrl(file.getId());
+      updateStudentPhotoUrl(regNo, photoUrl);
+      return {status:"ok", photoUrl:photoUrl};
+    }
+    if (row) {
+      var savedUrl = sh.getRange(row, 33).getValue();
+      if (savedUrl) return {status:"ok", photoUrl:savedUrl};
+    }
+    return {status:"notfound", photoUrl:""};
+  } catch(err) {
+    return {status:"error", message:err.toString()};
+  }
+}
+</pre>
+<button onclick="navigator.clipboard.writeText(document.getElementById('appsScriptCode').textContent);alert('फक्त Apps Script Code copy झाला आहे. Code.gs मध्ये paste करताना </pre>, <button>, <div> असे HTML tags paste करू नका.')" style="margin-top:8px;background:#d4902a;border:none;border-radius:5px;padding:7px 16px;color:#1a2a4a;font-weight:700;cursor:pointer">Only Code.gs Copy</button>
+<div style="margin-top:8px;padding:8px 10px;background:#4a1a1a;border:1px solid #b85a5a;border-radius:6px;color:#ffd0d0;font-size:11px;line-height:1.6">
+  <b>महत्त्वाचे:</b> Code.gs मध्ये फक्त वरच्या dark-blue box मधील JavaScript code paste करा. <b>&lt;/pre&gt;, &lt;button&gt;, &lt;div&gt;, Manifest Copy</b> हा HTML भाग Code.gs मध्ये paste करू नका.
+</div>
+<div style="margin-top:12px;padding:10px;background:#281a0a;border:1px solid #d4902a;border-radius:6px;color:#ffe0a0;font-size:11px;line-height:1.7">
+  <b>DriveApp Permission Fix:</b> Apps Script मध्ये Project Settings → Show "appsscript.json" manifest file सुरू करा आणि खालील scopes manifest मध्ये ठेवा. नंतर Save → Deploy New Version → एकदा Run/Test करून authorization Allow करा.
+</div>
+<pre id="appsScriptManifest" style="background:#0d1b35;padding:12px;border-radius:6px;margin-top:8px;overflow-x:auto;font-size:11px;color:#ffd18a;white-space:pre-wrap">{
+  "timeZone": "Asia/Kolkata",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets.currentonly",
+    "https://www.googleapis.com/auth/drive"
+  ]
+}</pre>
+<button onclick="navigator.clipboard.writeText(document.getElementById('appsScriptManifest').textContent)" style="margin-top:8px;background:#1a4a7a;border:none;border-radius:5px;padding:7px 16px;color:#fff;font-weight:700;cursor:pointer">Manifest Copy</button>
+</details>
+
+<script>
 // ============================================================
 // WORD (.docx) EXPORT — Template-based Mail Merge
 // ============================================================
@@ -2403,7 +3246,9 @@ function exportLCWordFromCertificate(filename) {
       return;
     }
     var css = Array.prototype.map.call(document.querySelectorAll('style'), function(s){ return s.textContent || ''; }).join('\n');
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>' + certPage.outerHTML + '</body></html>';
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+      '@page{size:A4;margin:0} body{margin:0;background:#fff;} ' + css +
+      '</style></head><body>' + certPage.outerHTML + '</body></html>';
     var blob = window.htmlDocx.asBlob(html, {
       orientation: 'portrait',
       margins: {top: 0, right: 0, bottom: 0, left: 0}
@@ -3964,9 +4809,33 @@ function renderAnalytics(r) {
   }
 }
 
+</script>
 
-
-
+<!-- ===== SAVE NOTIFICATION POPUP ===== -->
+<style>
+#sgsNotifBg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99998}
+#sgsNotif{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.85);
+  z-index:99999;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.4);
+  padding:28px 36px;text-align:center;min-width:280px;max-width:380px;
+  transition:transform .2s,opacity .2s;opacity:0}
+#sgsNotif.show{transform:translate(-50%,-50%) scale(1);opacity:1}
+#sgsNotif .sni{font-size:44px;display:block;margin-bottom:8px}
+#sgsNotif .snt{font-size:18px;font-weight:800;margin-bottom:6px;color:#1a1a2a}
+#sgsNotif .sns{font-size:26px;font-weight:900;color:#1a5a1a;background:#e8f8e8;
+  border-radius:8px;padding:8px 18px;margin:10px 0;letter-spacing:2px;display:none}
+#sgsNotif .snm{font-size:13px;color:#666;margin-top:6px}
+#sgsNotif .snc{margin-top:14px;background:#1a3a6a;color:#fff;border:none;
+  border-radius:8px;padding:9px 28px;font-size:14px;cursor:pointer;font-weight:700}
+</style>
+<div id="sgsNotifBg" onclick="closeSaveNotif()"></div>
+<div id="sgsNotif">
+  <span class="sni" id="sgsIcon">✅</span>
+  <div class="snt" id="sgsTitle">माहिती Save झाली!</div>
+  <div class="sns" id="sgsSerial"></div>
+  <div class="snm" id="sgsMsg"></div>
+  <button class="snc" onclick="closeSaveNotif()">ठीक आहे</button>
+</div>
+<script>
 function showSaveNotif(icon,title,serial,label,msg){
   var el=function(id){return document.getElementById(id);};
   el('sgsIcon').textContent=icon||'✅';
